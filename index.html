@@ -103,6 +103,7 @@ input,textarea,select{font:inherit;color:inherit}
 .mini-btn{font-size:13px;padding:5px 10px;border-radius:999px;background:var(--white);border:1px solid var(--line);color:var(--brown)}
 .mini-btn:active{background:var(--yellow-pale)}
 
+.typing-note{font-size:12px;color:var(--muted);margin:3px 6px 0;min-height:1em}
 .typing{display:inline-flex;gap:4px;padding:14px 16px}
 .typing i{width:8px;height:8px;border-radius:50%;background:var(--brown);opacity:.4;animation:blink 1.2s infinite}
 .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
@@ -416,8 +417,13 @@ const CONFIG = {
   MAX_REPLY_SENTENCES: 3,    // AI 대답 최대 문장 수
   MAX_TARGET_WORDS: 10,      // 목표 단어 개수
   TEMPERATURE: 0.7,
-  EXTRA_GENERATION_CONFIG: {},   // 필요하면 generationConfig에 추가할 값 (예: thinkingConfig)
-  REQUEST_TIMEOUT_MS: 40000,
+  EXTRA_GENERATION_CONFIG: {},   // 필요하면 generationConfig에 추가할 값
+  // 모델별 '생각(thinking)' 수준. 기본값(high/medium)은 답이 매우 느려지므로 낮춤.
+  // gemini-3.8-flash는 'minimal'을 지원하지 않아 'low' 사용. 모델이 거부(400)하면 자동으로 빼고 다시 보냄.
+  THINKING_LEVEL: {
+    'gemini-3.8-flash': 'low',
+  },
+  REQUEST_TIMEOUT_MS: 25000, // 이 시간 안에 답이 없으면 대체 모델로 1회 재시도
   TIMEZONE: 'Asia/Seoul',
   MAX_SAVED_SESSIONS: 300,
 };
@@ -771,7 +777,23 @@ function buildRequestBody() {
 }
 
 /** Gemini REST 호출 1회. API 키는 헤더(x-goog-api-key)로만 보냄 */
+const noThinkingModels = new Set();   // thinkingConfig를 거부한 모델 기억
 async function geminiRequest(model, body) {
+  // 모델별 thinking 수준 적용 (속도 개선)
+  const level = CONFIG.THINKING_LEVEL[model];
+  const useThinking = !!(level && body.generationConfig && !noThinkingModels.has(model));
+  if (useThinking) {
+    body = { ...body, generationConfig: { ...body.generationConfig, thinkingConfig: { thinkingLevel: level } } };
+  }
+  const r = await geminiRequestRaw(model, body);
+  if (useThinking && r.status === 400 && /think/i.test(String(r.data && r.data.error && r.data.error.message))) {
+    noThinkingModels.add(model);   // 이 모델은 thinkingConfig 없이 다시 보냄
+    const { thinkingConfig, ...gc } = body.generationConfig;
+    return geminiRequestRaw(model, { ...body, generationConfig: gc });
+  }
+  return r;
+}
+async function geminiRequestRaw(model, body) {
   recordRequest();
   refreshLock();
   if (EJ_DEBUG.force429 > 0) {
@@ -871,6 +893,13 @@ async function askAI() {
       stopForToday();
       return { ok: false, error: errorMessage(r), stopped: true };
     }
+  }
+  // 너무 오래 걸리면(시간 초과) 더 빠른 대체 모델로 1회만 재시도
+  if (r.status === 0 && r.timeout && model !== fallback && checkQuota().ok) {
+    state.model = fallback;
+    setTypingNote('조금 더 빠른 AI로 다시 물어보는 중…');
+    r = await geminiRequest(fallback, body);
+    if (r.status === 429) { stopForToday(); return { ok: false, error: errorMessage(r), stopped: true }; }
   }
   if (!r.ok) return { ok: false, error: errorMessage(r) };
 
@@ -1142,11 +1171,23 @@ function showTyping() {
   const row = document.createElement('div');
   row.className = 'row model';
   row.id = 'typingRow';
-  row.innerHTML = '<div class="who">🦒 EJ Teacher</div><div class="bubble typing"><i></i><i></i><i></i></div>';
+  row.innerHTML = '<div class="who">🦒 EJ Teacher</div><div class="bubble typing"><i></i><i></i><i></i></div><div class="typing-note"></div>';
   $('messages').appendChild(row);
   scrollToBottom();
+  // 기다리는 시간 표시 (5초 이후부터)
+  const started = Date.now();
+  clearInterval(state.typingTimer);
+  state.typingTimer = setInterval(() => {
+    const sec = Math.round((Date.now() - started) / 1000);
+    const note = row.querySelector('.typing-note');
+    if (note && sec >= 5 && !note.dataset.fixed) note.textContent = `생각하는 중… ${sec}초`;
+  }, 1000);
 }
-function hideTyping() { const t = $('typingRow'); if (t) t.remove(); }
+function setTypingNote(text) {
+  const note = document.querySelector('#typingRow .typing-note');
+  if (note) { note.textContent = text; note.dataset.fixed = '1'; }
+}
+function hideTyping() { clearInterval(state.typingTimer); const t = $('typingRow'); if (t) t.remove(); }
 function scrollToBottom() { const b = $('messages'); requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; }); }
 function autosize() { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
 
