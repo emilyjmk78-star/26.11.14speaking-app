@@ -103,6 +103,17 @@ input,textarea,select{font:inherit;color:inherit}
 .mini-btn{font-size:13px;padding:5px 10px;border-radius:999px;background:var(--white);border:1px solid var(--line);color:var(--brown)}
 .mini-btn:active{background:var(--yellow-pale)}
 
+.bubble.coach{background:var(--yellow-pale);border-color:#F3C27A}
+.coach-target{
+  margin:8px 0;padding:10px 12px;border-radius:12px;background:var(--white);border:2px dashed var(--green);
+  color:var(--green);font-weight:800;font-size:18px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;white-space:normal
+}
+.coach-target u{text-decoration-color:var(--red);text-decoration-thickness:3px;text-underline-offset:3px}
+.coach-target .say{flex:none;font-size:15px;padding:2px 8px;border-radius:999px;background:var(--green-soft)}
+.coach-hint{font-size:13px;color:#5C5045;margin:4px 6px 0}
+.row.user.repeat .bubble{background:var(--green-soft);color:var(--brown-dark);border:2px solid var(--green)}
+.repeat-tag{font-size:11px;font-weight:800;color:var(--green);margin:0 6px 2px}
+.repeat-line{margin:0 14px 6px;padding:8px 12px;border-radius:12px;background:var(--green-soft);color:var(--green);font-weight:800;text-align:center;font-size:15px}
 .typing-note{font-size:12px;color:var(--muted);margin:3px 6px 0;min-height:1em}
 .typing{display:inline-flex;gap:4px;padding:14px 16px}
 .typing i{width:8px;height:8px;border-radius:50%;background:var(--brown);opacity:.4;animation:blink 1.2s infinite}
@@ -264,13 +275,14 @@ details summary{cursor:pointer;font-weight:700;color:var(--brown)}
   <main id="messages" class="messages" aria-live="polite"></main>
 
   <div id="statusLine" class="status-line hidden"></div>
+  <div id="repeatLine" class="repeat-line hidden">🔁 따라 말하기! 🎤를 누르고 선생님 문장을 말해 보세요</div>
 
   <!-- ================= 입력 ================= -->
   <footer class="composer">
     <button id="micBtn" class="mic-btn" title="말하기" aria-label="말하기">🎤</button>
     <div class="input-wrap">
       <span id="recHint" class="rec-hint hidden">● 듣고 있어요… 다 말하면 🎤를 다시 누르세요</span>
-      <textarea id="input" rows="1" placeholder="🎤를 누르고 영어로 말하거나, 여기에 입력하세요" autocomplete="off" autocapitalize="sentences" spellcheck="false"></textarea>
+      <textarea id="input" rows="1" placeholder="🎤 누르고 말하거나 입력하세요" autocomplete="off" autocapitalize="sentences" spellcheck="false"></textarea>
     </div>
     <button id="sendBtn" class="send-btn">전송</button>
   </footer>
@@ -339,7 +351,14 @@ details summary{cursor:pointer;font-weight:700;color:var(--brown)}
       <div class="card">
         <h3>🧭 대화 옵션</h3>
         <label class="check"><input type="checkbox" id="sAutoTTS"> AI 대답을 자동으로 읽어주기</label>
-        <label class="check"><input type="checkbox" id="sFbOpen"> 피드백 카드를 항상 펼쳐서 보기</label>
+        <div class="field" style="margin-top:0">
+          <label>틀린 문장 고쳐주는 방식</label>
+          <div class="seg">
+            <label><input type="radio" name="sFbStyle" value="teacher"> 🧑‍🏫 선생님처럼 + 따라 말하기</label>
+            <label><input type="radio" name="sFbStyle" value="card"> 📝 카드로 보기</label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="sFbOpen"> (카드 방식일 때) 피드백 카드를 항상 펼쳐서 보기</label>
         <label class="check"><input type="checkbox" id="sMicAutoSend"> 🎤를 다시 누르면 바로 전송 (끄면 입력칸에서 고친 뒤 전송)</label>
       </div>
 
@@ -499,6 +518,7 @@ const DEFAULT_SETTINGS = {
   rpd: CONFIG.DEFAULT_RPD,
   autoTTS: true,
   feedbackAlwaysOpen: false,
+  feedbackStyle: 'teacher',   // 'teacher' = 선생님이 말로 고쳐주고 따라 말하기 / 'card' = 피드백 카드
   micAutoSend: false,
   modelPrimary: '',
   modelFallback: '',
@@ -609,6 +629,8 @@ function newSession() {
     wordCounts: Object.fromEntries(words.map(w => [w.word, 0])),
     messages: [],
     celebrated: false,
+    pending: null,                       // 따라 말하기 대기 중일 때: { target, attempts, reply, model, coachId }
+    repeatStats: { asked: 0, success: 0 },
   };
   const who = s.studentName || 'there';
   const opening = settings.grade === 'middle'
@@ -618,7 +640,7 @@ function newSession() {
   return s;
 }
 function saveCurrent() { if (state.session) saveJSON(LS.current, state.session); }
-function userTurns(s = state.session) { return s ? s.messages.filter(m => m.role === 'user') : []; }
+function userTurns(s = state.session) { return s ? s.messages.filter(m => m.role === 'user' && !m.kind) : []; }
 
 /* =========================================================
    문장 분리 & 3문장 제한
@@ -749,7 +771,8 @@ RULES:
 OUTPUT FIELDS (JSON):
 - "reply": your conversational answer only (no corrections, no praise of grammar).
 - "corrections": one item per real mistake in the student's LAST message only.
-  "original" = the exact wrong words the student said, "corrected" = the corrected sentence,
+  "original" = the exact wrong words the student said, "corrected" = a short, natural, complete sentence (max 15 words) the student can repeat aloud,
+  most important mistake first,
   "reason_ko" = one short Korean sentence, "type" = "grammar" | "content" (factually wrong) | "word_usage" (a target word used with the wrong meaning or form),
   "grammar_point_ko" = the closest category (use "내용" for content errors). Empty array if none.
 - "better_expressions": at most 2, only when a clearly more natural native expression exists. Otherwise empty.
@@ -762,7 +785,7 @@ ${opening ? `The conversation started with your greeting: "${opening.text}"` : '
 
 /** 요청 본문 만들기: 최근 N턴 + systemInstruction + JSON 스키마 */
 function buildRequestBody() {
-  const msgs = state.session.messages.filter(m => (m.role === 'user' || m.role === 'model') && !m.failed);
+  const msgs = state.session.messages.filter(m => (m.role === 'user' || m.role === 'model') && !m.failed && !m.kind);   // 따라 말하기 대화는 AI에게 보내지 않음
   let recent = msgs.slice(-(CONFIG.HISTORY_TURNS * 2));
   while (recent.length && recent[0].role !== 'user') recent = recent.slice(1);   // 반드시 user로 시작
   return {
@@ -959,7 +982,11 @@ function refreshLock() {
 }
 function updateComposer() {
   const q = checkQuota();
-  const blocked = state.busy || !q.ok || !isConfigured();
+  const repeating = !!(state.session && state.session.pending);
+  // 따라 말하기는 AI 요청을 쓰지 않으므로 한도와 상관없이 가능
+  const blocked = state.busy || (!repeating && (!q.ok || !isConfigured()));
+  $('repeatLine').classList.toggle('hidden', !repeating);
+  $('input').placeholder = repeating ? '🔁 선생님 문장을 따라 말해 보세요' : '🎤 누르고 말하거나 입력하세요';
   $('sendBtn').disabled = blocked;
   $('micBtn').disabled = (blocked && !recognizer.recording) || recognizer.unavailable;
   $('endBtn').disabled = state.busy;
@@ -977,14 +1004,21 @@ const tts = {
     const prefer = /Google US English|Samantha|Aria|Jenny|Ava|Allison|Microsoft.*Online|Zira/i;
     return en.find(v => prefer.test(v.name)) || en[0] || this.voices.find(v => /^en/i.test(v.lang)) || null;
   },
-  speak(text) {
-    if (!this.supported || !text) return;
+  speak(text) { this.speakSeq([{ text }]); },
+  /** 여러 문장을 차례로 읽기. slow:true 면 천천히 (따라 말할 문장) */
+  speakSeq(parts) {
+    if (!this.supported) return;
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    const v = this.pick(); if (v) u.voice = v;
-    u.rate = settings.grade === 'middle' ? 0.98 : 0.9;
-    setTimeout(() => speechSynthesis.speak(u), 60);   // cancel 직후 바로 말하면 무시되는 크롬 버그 회피
+    const v = this.pick();
+    const base = settings.grade === 'middle' ? 0.98 : 0.9;
+    const list = parts.filter(p => p && p.text).map(p => {
+      const u = new SpeechSynthesisUtterance(String(p.text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim());
+      u.lang = 'en-US';
+      if (v) u.voice = v;
+      u.rate = p.slow ? base * 0.82 : base;
+      return u;
+    });
+    setTimeout(() => list.forEach(u => speechSynthesis.speak(u)), 60);   // cancel 직후 바로 말하면 무시되는 크롬 버그 회피
   },
   stop() { if (this.supported) speechSynthesis.cancel(); },
 };
@@ -1109,7 +1143,24 @@ function renderMessage(m) {
   const row = document.createElement('div');
   row.className = 'row ' + m.role;
   row.dataset.id = m.id;
-  if (m.role === 'user') {
+  if (m.role === 'user' && m.kind === 'repeat') {
+    row.classList.add('repeat');
+    row.innerHTML = `<div class="who">${escapeHtml(state.session.studentName || 'Me')}</div>
+      <div class="repeat-tag">🔁 따라 말하기</div>
+      <div class="bubble">${escapeHtml(m.text)}</div>`;
+  } else if (m.kind === 'coach') {
+    const s = state.session;
+    const isCurrent = s.pending && s.pending.coachId === m.id;
+    row.innerHTML = `<div class="who">🦒 EJ Teacher</div>
+      <div class="bubble coach">${escapeHtml(m.intro)}
+        <div class="coach-target"><span>“${markMissing(m.target, m.missing)}”</span><button class="say" type="button" aria-label="문장 듣기">🔊</button></div>${escapeHtml(m.outro)}</div>
+      ${m.reason ? `<div class="coach-hint">💬 ${escapeHtml(m.reason)}</div>` : ''}
+      <div class="bubble-tools"><button class="mini-btn say-btn" type="button">🔊 다시 듣기</button>${isCurrent ? '<button class="mini-btn skip-btn" type="button">⏭ 건너뛰기</button>' : ''}</div>`;
+    row.querySelector('.coach-target .say').onclick = () => tts.speakSeq([{ text: m.target, slow: true }]);
+    row.querySelector('.say-btn').onclick = () => speakCoach(m);
+    const skip = row.querySelector('.skip-btn');
+    if (skip) skip.onclick = skipRepeat;
+  } else if (m.role === 'user') {
     row.innerHTML = `<div class="who">${escapeHtml(state.session.studentName || 'Me')}</div>
       <div class="bubble">${highlightWords(m.text, m.usedWords)}</div>
       <div class="fb"></div>`;
@@ -1130,6 +1181,7 @@ function renderFeedback(el, m) {
   if (fb.unavailable) { el.innerHTML = '<span class="fb-pending">피드백을 불러오지 못했어요</span>'; return; }
   const cs = fb.corrections || [], bs = fb.better || [];
   if (!cs.length && !bs.length) { el.innerHTML = '<span class="fb-perfect">👍 Perfect!</span>'; return; }
+  if (settings.feedbackStyle !== 'card') { el.innerHTML = ''; return; }   // 선생님 방식: 말풍선으로 고쳐줌
 
   const TYPE = {
     grammar: { tag: '❌ 문법' },
@@ -1198,6 +1250,7 @@ async function sendMessage() {
   const input = $('input');
   const text = input.value.replace(/\s+/g, ' ').trim();
   if (!text || state.busy) return;
+  if (state.session && state.session.pending) { handleRepeat(text); return; }   // 따라 말하기 단계
   if (!isConfigured()) { openSettings(); return; }
   const q = refreshLock();
   if (!q.ok) { toast(quotaMessage(q)); return; }
@@ -1260,12 +1313,21 @@ async function sendMessage() {
   renderChips(Object.keys(used));
   if (newly.length) toast(`✅ ${newly.join(', ')} 사용 성공!`);
 
-  // ----- AI 대답 (대화만, 수정 내용 없음) -----
-  const aiMsg = { id: uid(), role: 'model', text: reply, ts: Date.now(), model: state.model || primaryModel() };
-  s.messages.push(aiMsg);
-  renderMessage(aiMsg);
-  scrollToBottom();
-  if (settings.autoTTS) tts.speak(reply);
+  // ----- 선생님 방식: 고칠 점이 있으면 먼저 고쳐주고 따라 말하기 → 끝나면 대화 이어가기 -----
+  const coach = settings.feedbackStyle !== 'card' ? pickCoaching(msg.feedback) : null;
+  if (coach) {
+    s.repeatStats = s.repeatStats || { asked: 0, success: 0 };
+    s.repeatStats.asked += 1;
+    s.pending = { target: coach.target, attempts: 0, reply, model: state.model || primaryModel(), coachId: null };
+    addCoachMessage(coachIntro(coach.kind), coach.target, 'Repeat after me! 🔁', coach.reason, []);
+  } else {
+    // ----- AI 대답 (대화만) -----
+    const aiMsg = { id: uid(), role: 'model', text: reply, ts: Date.now(), model: state.model || primaryModel() };
+    s.messages.push(aiMsg);
+    renderMessage(aiMsg);
+    scrollToBottom();
+    if (settings.autoTTS) tts.speak(reply);
+  }
 
   // ----- 10개 모두 사용 축하 -----
   if (!s.celebrated && s.words.length && s.words.every(w => s.wordCounts[w.word])) {
@@ -1274,6 +1336,111 @@ async function sendMessage() {
   }
   saveCurrent();
   refreshLock();
+}
+
+/* =========================================================
+   선생님처럼 고쳐주기 + 따라 말하기 (AI 요청 없이 앱 안에서 처리)
+   ========================================================= */
+const REPEAT_PASS = 0.75;   // 따라 말하기 통과 기준 (단어 일치율)
+const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
+function nameTag() { const n = state.session && state.session.studentName; return n ? ', ' + n : ''; }
+
+/** 고칠 점 중 가장 중요한 1개만 고름 (한 번에 하나씩) */
+function pickCoaching(fb) {
+  if (!fb || fb.unavailable) return null;
+  const cs = fb.corrections || [], bs = fb.better || [];
+  const c = cs.find(x => x.type !== 'content' && x.corrected) || cs.find(x => x.corrected);
+  if (c) return { kind: c.type === 'content' ? 'content' : 'fix', target: c.corrected, reason: c.reason_ko };
+  const b = bs.find(x => x.better);
+  if (b) return { kind: 'better', target: b.better, reason: b.note_ko };
+  return null;
+}
+function coachIntro(kind) {
+  const n = nameTag();
+  if (kind === 'content') return `Good try${n}! But actually, it's like this:`;
+  if (kind === 'better') return `${pickOne(["That's good", 'Nice sentence', 'Good job'])}${n}! 👍 But a native speaker would say:`;
+  return `${pickOne(['Good job', 'Nice try', 'Good thinking', 'Great effort'])}${n}! 👍 But it's better to say:`;
+}
+function addCoachMessage(intro, target, outro, reason, missing) {
+  const s = state.session;
+  const m = { id: uid(), role: 'model', kind: 'coach', intro, target, outro, reason: reason || '', missing: missing || [],
+    text: `${intro} "${target}" ${outro}`, ts: Date.now() };
+  s.pending.coachId = m.id;
+  document.querySelectorAll('.skip-btn').forEach(b => b.remove());
+  s.messages.push(m);
+  renderMessage(m);
+  scrollToBottom();
+  if (settings.autoTTS) speakCoach(m);
+  updateComposer();
+}
+function speakCoach(m) {
+  tts.speakSeq([{ text: m.intro }, { text: m.target, slow: true }, { text: m.outro }]);
+}
+/** 비교용 단어 목록 (소문자, 문장부호 제거) */
+function wordTokens(t) {
+  return String(t || '').toLowerCase().replace(/[’‘`]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+}
+/** 두 문장의 단어 일치율 (0~1, 순서 고려) + 빠뜨린 단어 */
+function compareSentences(target, said) {
+  const a = wordTokens(target), b = wordTokens(said);
+  if (!a.length || !b.length) return { score: 0, missing: a };
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const matched = new Set();
+  for (let i = a.length, j = b.length; i > 0 && j > 0;) {
+    if (a[i - 1] === b[j - 1]) { matched.add(i - 1); i--; j--; }
+    else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--;
+  }
+  return { score: (2 * dp[a.length][b.length]) / (a.length + b.length), missing: a.filter((w, i) => !matched.has(i)) };
+}
+/** 빠뜨린 단어에 밑줄 */
+function markMissing(target, missing) {
+  const miss = new Set(missing || []);
+  return String(target).split(/(\s+)/).map(part => {
+    const w = wordTokens(part)[0];
+    return w && miss.has(w) ? `<u>${escapeHtml(part)}</u>` : escapeHtml(part);
+  }).join('');
+}
+function handleRepeat(text) {
+  const s = state.session, p = s.pending;
+  if (recognizer.recording) recognizer.stop(false);
+  tts.stop();
+  const um = { id: uid(), role: 'user', kind: 'repeat', text, ts: Date.now() };
+  s.messages.push(um);
+  renderMessage(um);
+  $('input').value = ''; autosize();
+  p.attempts += 1;
+  const { score, missing } = compareSentences(p.target, text);
+  if (score >= REPEAT_PASS) {
+    s.repeatStats.success += 1;
+    finishRepeat(`${pickOne(['Perfect', 'Excellent', 'Great job', 'Wonderful', 'Awesome'])}${nameTag()}! 👏`);
+  } else if (p.attempts < 2) {
+    addCoachMessage(`Almost${nameTag()}! Listen again and try once more:`, p.target, 'Your turn! 🎤', '밑줄 친 단어를 빠뜨렸어요. 천천히 다시 말해 봐요.', missing);
+  } else {
+    finishRepeat(`Good try${nameTag()}! We'll practice it again later. 😊`);
+  }
+  saveCurrent();
+}
+function skipRepeat() {
+  if (!state.session || !state.session.pending) return;
+  tts.stop();
+  finishRepeat(`Okay${nameTag()}! Let's keep going. 😊`);
+  saveCurrent();
+}
+/** 칭찬 한마디 → 원래 대화 질문으로 이어가기 */
+function finishRepeat(praise) {
+  const s = state.session, p = s.pending;
+  s.pending = null;
+  document.querySelectorAll('.skip-btn').forEach(b => b.remove());
+  const pm = { id: uid(), role: 'model', kind: 'praise', text: praise, ts: Date.now() };
+  const am = { id: uid(), role: 'model', text: p.reply, ts: Date.now(), model: p.model };
+  s.messages.push(pm, am);
+  renderMessage(pm);
+  renderMessage(am);
+  scrollToBottom();
+  if (settings.autoTTS) tts.speakSeq([{ text: praise }, { text: p.reply }]);
+  updateComposer();
 }
 
 /* =========================================================
@@ -1309,6 +1476,7 @@ function buildReport(s) {
     targetWords: words,
     wordsUsed: words.filter(w => w.count > 0).length,
     wordsTotal: words.length,
+    repeatPractice: s.repeatStats || { asked: 0, success: 0 },
     perfectSentences: turns.filter(m => m.feedback && !m.feedback.unavailable && !(m.feedback.corrections || []).length).length,
     corrections: corrections.map(c => ({ original: c.original, corrected: c.corrected, reason_ko: c.reason_ko, type: c.type, grammar_point_ko: c.grammar_point_ko || '', studentSaid: c.said })),
     betterExpressions: betters.map(b => ({ original: b.original, better: b.better, note_ko: b.note_ko })),
@@ -1323,6 +1491,7 @@ function reportToText(r) {
   L.push(`학생: ${r.studentName || '-'} (${r.grade})`);
   L.push(`주제: ${r.topic}`);
   L.push(`대화 턴 수: ${r.totalTurns}회 · 완벽한 문장: ${r.perfectSentences}개`);
+  if (r.repeatPractice && r.repeatPractice.asked) L.push(`따라 말하기: ${r.repeatPractice.success} / ${r.repeatPractice.asked} 성공`);
   L.push(`목표 단어: ${r.wordsUsed} / ${r.wordsTotal}`);
   for (const w of r.targetWords) L.push(`  ${w.count ? '✅' : '⬜'} ${w.word}${w.meaning ? ' (' + w.meaning + ')' : ''}${w.count ? ' ' + w.count + '회' : ''}`);
   L.push('');
@@ -1372,6 +1541,7 @@ function showReport(r) {
       <div>📅 <b>${escapeHtml(r.date)}</b> (${r.minutes}분)</div>
       <div>🙋 ${escapeHtml(r.studentName || '-')} (${escapeHtml(r.grade)})</div>
       <div>💬 주제: <b>${escapeHtml(r.topic)}</b></div>
+      ${r.repeatPractice && r.repeatPractice.asked ? `<div>🔁 따라 말하기: <b>${r.repeatPractice.success} / ${r.repeatPractice.asked}</b> 성공</div>` : ''}
     </div>
     <div class="stat-grid">
       <div class="stat"><b>${r.totalTurns}</b><span>대화 턴</span></div>
@@ -1480,6 +1650,7 @@ function openSettings() {
   updateWordPreview();
   $('sAutoTTS').checked = settings.autoTTS;
   $('sFbOpen').checked = settings.feedbackAlwaysOpen;
+  document.querySelectorAll('input[name=sFbStyle]').forEach(r => { r.checked = r.value === (settings.feedbackStyle || 'teacher'); });
   $('sMicAutoSend').checked = settings.micAutoSend;
   $('sRpm').value = settings.rpm;
   $('sRpd').value = settings.rpd;
@@ -1507,6 +1678,7 @@ function saveSettingsFromForm() {
     wordsText: $('sWords').value,
     autoTTS: $('sAutoTTS').checked,
     feedbackAlwaysOpen: $('sFbOpen').checked,
+    feedbackStyle: (document.querySelector('input[name=sFbStyle]:checked') || {}).value || 'teacher',
     micAutoSend: $('sMicAutoSend').checked,
     rpm: Math.min(60, Math.max(1, parseInt($('sRpm').value, 10) || CONFIG.DEFAULT_RPM)),
     rpd: Math.min(5000, Math.max(1, parseInt($('sRpd').value, 10) || CONFIG.DEFAULT_RPD)),
@@ -1579,7 +1751,7 @@ function bindEvents() {
     if (recognizer.recording) recognizer.stop(settings.micAutoSend);
     else {
       const q = checkQuota();
-      if (!q.ok) { toast(quotaMessage(q)); return; }
+      if (!q.ok && !(state.session && state.session.pending)) { toast(quotaMessage(q)); return; }
       recognizer.start();
     }
   };
