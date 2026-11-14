@@ -2655,10 +2655,10 @@ function hwTeacher(){
    +(sk?'<div class="spk-form"><label class="fld"><span class="label">💬 대화 주제 (영어)</span><input type="text" id="hw_sptopic" data-bind="hw_sptopic" value="'+esc(f.sptopic||'')+'" placeholder="예: What I want for Christmas"></label>'
      +'<label class="fld"><span class="label">🎯 목표 단어 10개 — 한 줄에 "단어 - 뜻"</span><textarea id="hw_spwords" data-bind="hw_spwords" rows="8" placeholder="season - 계절&#10;warm - 따뜻한&#10;go camping - 캠핑하러 가다">'+esc(f.spwords||'')+'</textarea></label>'
      +'<div class="label">수준 (AI 말투)</div><div class="tabs"><button data-act="hwsplevel" data-v="elementary" aria-selected="'+(f.splevel!=='middle')+'">초등</button><button data-act="hwsplevel" data-v="middle" aria-selected="'+(f.splevel==='middle')+'">중등</button></div>'
-     +'<p class="meta">제목을 비우면 "스피킹: 주제"로 올라가요. 학생은 숙제 제출 메뉴에서 스피킹을 하고 결과를 제출해요.</p></div>':'')
+     +'<p class="meta">제목을 비우면 "스피킹: 주제"로 올라가요. 학생은 🎤 스피킹 메뉴에서 대화하고 결과를 제출해요.</p></div>':'')
    +(sk?'':'<div class="label">폴더</div><div class="tabs">'+HF.map(x=>'<button data-act="hwfolder" data-v="'+x[0]+'" aria-selected="'+(fo===x[0])+'">'+x[2]+' '+x[1]+'</button>').join('')+'</div>')
    +(fo!=='gen'?'<p class="meta">이 폴더를 열어 준 학생에게만 보여요. (학생별 과정 메뉴에서 열고 닫아요)</p>':'')
-   +'<label class="fld"><span class="label">제목</span><input type="text" id="hw_title" data-bind="hw_title" value="'+esc(f.title||'')+'" placeholder="예: 1주차 Reading Explorer 워크시트"></label>'
+   +'<label class="fld"><span class="label">제목</span><input type="text" id="hw_title" data-bind="hw_title" value="'+esc(f.title||'')+'" placeholder="'+(sk?'비우면 스피킹: 주제':'예: 1주차 Reading Explorer 워크시트')+'"></label>'
    +'<label class="fld"><span class="label">안내 (선택) — 학생에게 그대로 보여요</span><textarea id="hw_desc" data-bind="hw_desc" rows="4">'+esc(f.desc||'')+'</textarea></label>'
    +'<div class="two"><label class="fld"><span class="label">오픈 날짜 (비우면 바로)</span><input type="date" id="hw_odate" data-bind="hw_odate" value="'+esc(f.odate||'')+'"></label><label class="fld"><span class="label">오픈 시간</span><input type="time" id="hw_otime" data-bind="hw_otime" value="'+esc(f.otime||'')+'"></label></div>'
    +'<div class="two"><label class="fld"><span class="label">마감 날짜</span><input type="date" id="hw_date" data-bind="hw_date" value="'+esc(f.date||'')+'"></label><label class="fld"><span class="label">마감 시간</span><input type="time" id="hw_time" data-bind="hw_time" value="'+esc(f.time||'20:00')+'"></label></div>'
