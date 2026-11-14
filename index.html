@@ -293,10 +293,1459 @@ tr:first-child td{border-top:0}
 @media (prefers-reduced-motion:reduce){.party .flash{display:none}}
 .starbtn{border-color:#f5c542}.starb{border:2px solid #f5c542;background:#fffbe6;color:#7a5b00}.starb.on{background:#ffe9a8}
 .gsearch{margin:.8em 0}
+.spk-words{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}.spk-words small{opacity:.75}
+.spk-stats{display:flex;flex-wrap:wrap;gap:8px}.spk-stats span{flex:1;min-width:80px;text-align:center;padding:8px;border-radius:10px;background:var(--soft,#f6f1e7);font-size:12px}.spk-stats b{display:block;font-size:20px}
+.spk-list{margin:0;padding-left:1.3em;text-align:left}.spk-list li{margin:4px 0}.spk-list s{color:#c0392b}.spk-ok{color:#2e9e5b}
+.spk-tr{text-align:left}.spk-tr summary{cursor:pointer;font-weight:700}.spk-tr p{margin:4px 0;font-size:14px}.spk-me{color:#7a4e2d}
 </style>
 
 <div class="wrap" id="app"></div>
 
+<script id="ej-speak-widget">
+/* ===== EJ Speaking 위젯 (tools/make_widget.py 로 speaking.html 에서 자동 생성) ===== */
+(function () {
+'use strict';
+const WIDGET_CSS = "\n/* =========================================================\n   디자인 토큰 (노란색 · 갈색 기린 포인트 컬러)\n   ========================================================= */\n:host{all:initial;\n  --yellow:#FFC93C; --yellow-soft:#FFF1C1; --yellow-pale:#FFF8E1;\n  --brown:#7A4E2D; --brown-dark:#4E3018; --brown-soft:#E9D8C6;\n  --cream:#FFFBF2; --white:#FFFFFF; --ink:#2F2418; --muted:#8A7B6C;\n  --green:#2E9E5B; --green-soft:#E2F5E9; --red:#D64545; --red-soft:#FDECEC;\n  --blue-soft:#EAF3FF; --line:#EDE3D6; --chip:#EFEBE5;\n  --radius:18px; --shadow:0 4px 16px rgba(78,48,24,.10);\n}\n*{box-sizing:border-box}\n.wrap{\n  height:100%;background:var(--cream); color:var(--ink);\n  font-family:-apple-system,BlinkMacSystemFont,\"Apple SD Gothic Neo\",\"Malgun Gothic\",\"Noto Sans KR\",\"Segoe UI\",Roboto,sans-serif;\n  font-size:16px; line-height:1.5; -webkit-tap-highlight-color:transparent;\n}\nbutton{font:inherit;cursor:pointer;border:none;background:none;color:inherit}\nbutton:disabled{cursor:not-allowed;opacity:.45}\ninput,textarea,select{font:inherit;color:inherit}\n.hidden{display:none!important}\n\n/* ---------- 전체 레이아웃 ---------- */\n.app{display:flex;flex-direction:column;height:100%;max-width:860px;margin:0 auto;background:var(--cream)}\n\n/* ---------- 헤더 (기린 무늬) ---------- */\n.app-header{\n  display:flex;align-items:center;justify-content:space-between;gap:8px;\n  padding:10px 14px; padding-top:max(10px,env(safe-area-inset-top));\n  background:\n    radial-gradient(circle at 12% 30%, rgba(122,78,45,.16) 0 9px, transparent 10px),\n    radial-gradient(circle at 34% 78%, rgba(122,78,45,.13) 0 7px, transparent 8px),\n    radial-gradient(circle at 58% 22%, rgba(122,78,45,.12) 0 6px, transparent 7px),\n    radial-gradient(circle at 80% 70%, rgba(122,78,45,.14) 0 8px, transparent 9px),\n    var(--yellow);\n  border-bottom:3px solid var(--brown);\n}\n.brand{display:flex;align-items:center;gap:8px;color:var(--brown-dark);font-weight:800;font-size:18px;white-space:nowrap}\n.brand .giraffe{font-size:28px;line-height:1}\n.brand .sub{font-weight:600;opacity:.85}\n.header-right{display:flex;align-items:center;gap:6px}\n.usage{\n  font-size:12px;font-weight:700;color:var(--brown-dark);background:rgba(255,255,255,.75);\n  padding:4px 9px;border-radius:999px;white-space:nowrap\n}\n.usage.warn{background:#fff;color:var(--red)}\n.icon-btn{\n  width:44px;height:44px;border-radius:14px;font-size:22px;background:rgba(255,255,255,.75);\n  display:inline-flex;align-items:center;justify-content:center\n}\n.icon-btn:active{transform:scale(.95)}\n.icon-btn.off{opacity:.55}\n\n/* ---------- 주제 + 단어 칩 ---------- */\n.topic-bar{padding:10px 14px 8px;background:var(--white);border-bottom:1px solid var(--line)}\n.topic-row{display:flex;align-items:center;gap:10px}\n.topic-text{flex:1;min-width:0}\n.topic-label{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--brown)}\n.topic-title{margin:0;font-size:19px;font-weight:800;color:var(--brown-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.end-btn{\n  flex:none;padding:10px 14px;border-radius:14px;background:var(--brown);color:#fff;font-weight:700;font-size:14px\n}\n.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}\n.chips-head{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}\n.chips-head b{color:var(--green)}\n.chip{\n  display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;\n  background:var(--chip);color:#6E655B;font-size:14px;border:2px solid transparent;white-space:nowrap\n}\n.chip small{font-size:11px;opacity:.8}\n.chip .cnt{font-size:12px;font-weight:800}\n.chip.used{background:var(--green-soft);color:var(--green);border-color:var(--green)}\n.chip.pop{animation:pop .5s ease}\n@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}\n\n/* ---------- 알림 띠 ---------- */\n.notice{margin:8px 14px 0;padding:10px 12px;border-radius:12px;font-size:14px;background:var(--blue-soft);color:#24507F;display:flex;gap:8px;align-items:flex-start}\n.notice.error{background:var(--red-soft);color:#9B2C2C}\n.notice.warn{background:var(--yellow-pale);color:var(--brown-dark)}\n.notice .x{margin-left:auto;font-size:16px;padding:0 4px}\n\n/* ---------- 채팅 ---------- */\n.messages{flex:1;overflow-y:auto;padding:16px 14px 8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}\n.row{display:flex;flex-direction:column;max-width:86%}\n.row.user{align-self:flex-end;align-items:flex-end}\n.row.model{align-self:flex-start;align-items:flex-start}\n.who{font-size:12px;color:var(--muted);margin:6px 6px 2px}\n.bubble{padding:11px 15px;border-radius:var(--radius);font-size:17px;line-height:1.45;word-break:break-word;white-space:pre-wrap}\n.user .bubble{background:var(--yellow);color:var(--brown-dark);border-bottom-right-radius:6px}\n.model .bubble{background:var(--white);border:2px solid var(--brown-soft);border-bottom-left-radius:6px}\n.bubble mark{background:rgba(46,158,91,.18);color:inherit;border-bottom:2px solid var(--green);padding:0 1px;border-radius:3px}\n.bubble-tools{display:flex;gap:6px;margin-top:4px}\n.mini-btn{font-size:13px;padding:5px 10px;border-radius:999px;background:var(--white);border:1px solid var(--line);color:var(--brown)}\n.mini-btn:active{background:var(--yellow-pale)}\n\n.bubble.coach{background:var(--yellow-pale);border-color:#F3C27A}\n.coach-target{\n  margin:8px 0;padding:10px 12px;border-radius:12px;background:var(--white);border:2px dashed var(--green);\n  color:var(--green);font-weight:800;font-size:18px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;white-space:normal\n}\n.coach-target u{text-decoration-color:var(--red);text-decoration-thickness:3px;text-underline-offset:3px}\n.coach-target .say{flex:none;font-size:15px;padding:2px 8px;border-radius:999px;background:var(--green-soft)}\n.coach-hint{font-size:13px;color:#5C5045;margin:4px 6px 0}\n.row.user.repeat .bubble{background:var(--green-soft);color:var(--brown-dark);border:2px solid var(--green)}\n.repeat-tag{font-size:11px;font-weight:800;color:var(--green);margin:0 6px 2px}\n.repeat-line{margin:0 14px 6px;padding:8px 12px;border-radius:12px;background:var(--green-soft);color:var(--green);font-weight:800;text-align:center;font-size:15px}\n.typing-note{font-size:12px;color:var(--muted);margin:3px 6px 0;min-height:1em}\n.typing{display:inline-flex;gap:4px;padding:14px 16px}\n.typing i{width:8px;height:8px;border-radius:50%;background:var(--brown);opacity:.4;animation:blink 1.2s infinite}\n.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}\n@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:.9}}\n\n/* ---------- 피드백 카드 ---------- */\n.fb{margin-top:5px;max-width:100%;font-size:14px}\n.fb-perfect{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--green-soft);color:var(--green);font-weight:800;font-size:13px}\n.fb-pending{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--chip);color:var(--muted);font-size:12px}\n.fb-badge{\n  display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;\n  background:var(--white);border:2px solid #F3C27A;color:var(--brown-dark);font-weight:700;font-size:13px\n}\n.fb-badge .chev{transition:transform .2s}\n.fb.open .fb-badge .chev{transform:rotate(180deg)}\n.fb-body{display:none;margin-top:6px;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:6px 10px;box-shadow:var(--shadow);text-align:left}\n.fb.open .fb-body{display:block}\n.fb-item{padding:8px 0;border-bottom:1px dashed var(--line)}\n.fb-item:last-child{border-bottom:none}\n.fb-tag{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em}\n.fb-orig{color:var(--red);text-decoration:line-through;text-decoration-color:rgba(214,69,69,.5)}\n.fb-orig.plain{text-decoration:none;color:#9B6B48}\n.fb-fix{color:var(--green);font-weight:700;display:flex;gap:6px;align-items:flex-start;justify-content:space-between}\n.fb-fix .say{flex:none;font-size:15px;padding:2px 8px;border-radius:999px;background:var(--green-soft)}\n.fb-reason{color:#5C5045;font-size:13px;margin-top:2px}\n\n/* ---------- 상태줄 & 입력창 ---------- */\n.status-line{margin:0 14px 6px;padding:8px 12px;border-radius:12px;background:var(--yellow-pale);color:var(--brown-dark);font-weight:700;text-align:center;font-size:15px}\n.status-line.stop{background:var(--red-soft);color:#9B2C2C}\n.composer{\n  display:flex;align-items:flex-end;gap:8px;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));\n  background:var(--white);border-top:1px solid var(--line)\n}\n.mic-btn{\n  flex:none;width:64px;height:64px;border-radius:50%;font-size:30px;background:var(--yellow);\n  border:3px solid var(--brown);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center\n}\n.mic-btn.rec{background:var(--red);border-color:#9B2C2C;animation:pulse 1.2s infinite}\n@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(214,69,69,.5)}70%{box-shadow:0 0 0 14px rgba(214,69,69,0)}100%{box-shadow:0 0 0 0 rgba(214,69,69,0)}}\n.input-wrap{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}\n.rec-hint{font-size:12px;color:var(--red);font-weight:700;padding-left:4px}\n#input{\n  width:100%;min-height:52px;max-height:140px;resize:none;padding:13px 14px;border-radius:16px;\n  border:2px solid var(--line);background:var(--cream);font-size:17px;line-height:1.4;outline:none\n}\n#input:focus{border-color:var(--yellow)}\n.send-btn{flex:none;height:52px;min-width:72px;padding:0 16px;border-radius:16px;background:var(--brown);color:#fff;font-weight:800;font-size:17px}\n\n/* ---------- 오버레이(설정 / 리포트) ---------- */\n.overlay{position:fixed;inset:0;background:rgba(47,36,24,.45);z-index:50;display:flex;justify-content:center;align-items:stretch}\n.panel{width:100%;max-width:720px;background:var(--cream);overflow-y:auto;display:flex;flex-direction:column}\n.panel-head{\n  position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;\n  padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));background:var(--yellow);border-bottom:3px solid var(--brown)\n}\n.panel-head h2{margin:0;font-size:20px;color:var(--brown-dark)}\n.panel-body{padding:14px 16px 30px;display:flex;flex-direction:column;gap:14px}\n.card{background:var(--white);border-radius:16px;padding:14px;box-shadow:var(--shadow)}\n.card h3{margin:0 0 8px;font-size:16px;color:var(--brown-dark)}\n.field{display:flex;flex-direction:column;gap:5px;margin-top:10px}\n.field:first-of-type{margin-top:0}\n.field label{font-weight:700;font-size:14px}\n.field .help{font-size:12.5px;color:var(--muted)}\n.field input[type=text],.field input[type=password],.field input[type=number],.field textarea,.field select{\n  width:100%;padding:11px 12px;border-radius:12px;border:2px solid var(--line);background:var(--cream);font-size:16px;outline:none\n}\n.field textarea{min-height:110px;resize:vertical;line-height:1.5}\n.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--yellow)}\n.inline{display:flex;gap:8px;align-items:center}\n.inline > input{flex:1}\n.btn{padding:11px 16px;border-radius:12px;font-weight:700;background:var(--brown);color:#fff;font-size:15px}\n.btn.light{background:var(--yellow-soft);color:var(--brown-dark)}\n.btn.ghost{background:var(--white);border:2px solid var(--line);color:var(--brown-dark)}\n.btn.danger{background:var(--red-soft);color:#9B2C2C}\n.btn.big{padding:15px 18px;font-size:17px;border-radius:14px}\n.warn-box{background:var(--yellow-pale);border-left:5px solid var(--yellow);padding:10px 12px;border-radius:10px;font-size:13.5px;color:var(--brown-dark)}\n.seg{display:flex;gap:8px}\n.seg label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;border-radius:12px;border:2px solid var(--line);background:var(--cream);font-weight:700;cursor:pointer}\n.seg input{accent-color:var(--brown)}\n.seg label:has(input:checked){border-color:var(--brown);background:var(--yellow-soft)}\n.check{display:flex;gap:10px;align-items:center;padding:6px 0;font-size:15px}\n.check input{width:22px;height:22px;accent-color:var(--brown)}\n.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}\n.test-result{font-size:14px;margin-top:6px}\n.test-result.ok{color:var(--green)} .test-result.bad{color:var(--red)}\n.word-preview{font-size:13px;color:var(--muted);margin-top:4px}\n.word-preview b{color:var(--green)}\n.word-preview .err{color:var(--red)}\ndetails summary{cursor:pointer;font-weight:700;color:var(--brown)}\n.actions{display:flex;flex-wrap:wrap;gap:8px}\n\n/* ---------- 리포트 ---------- */\n.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}\n.stat{background:var(--yellow-pale);border-radius:14px;padding:10px;text-align:center}\n.stat b{display:block;font-size:24px;color:var(--brown-dark)}\n.stat span{font-size:12px;color:var(--muted)}\n.meta{font-size:14px;color:#5C5045}\n.meta div{padding:2px 0}\n.r-words{display:flex;flex-wrap:wrap;gap:6px}\n.r-list{margin:0;padding-left:20px}\n.r-list li{margin:6px 0}\n.r-list .o{color:var(--red);text-decoration:line-through}\n.r-list .c{color:var(--green);font-weight:700}\n.r-list .why{display:block;font-size:13px;color:var(--muted)}\n.empty{color:var(--muted);font-size:14px}\n\n/* ---------- 토스트 ---------- */\n.toast{\n  position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:80;\n  background:var(--brown-dark);color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;max-width:90vw;text-align:center;\n  transition:all .25s;pointer-events:none;box-shadow:var(--shadow)\n}\n.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}\n.toast.party{background:var(--green);font-size:20px;padding:18px 24px}\n\n/* ---------- 반응형 ---------- */\n@media (max-width:600px){\n  .brand .sub{display:none}\n  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}\n  .chips::-webkit-scrollbar{display:none}\n  .grid2{grid-template-columns:1fr}\n  .row{max-width:92%}\n  .topic-title{font-size:17px}\n}\n@media (min-width:861px){\n  .app{border-left:1px solid var(--line);border-right:1px solid var(--line)}\n}\n\n.wrap{position:relative}\n.overlay{position:absolute}\n";
+const WIDGET_HTML = "<div class=\"wrap\"><div class=\"app\" id=\"app\">\n  <!-- ================= 헤더 ================= -->\n  <header class=\"app-header\">\n    <div class=\"brand\"><span class=\"giraffe\">🦒</span><span>EJ English <span class=\"sub\">· Speaking</span></span></div>\n    <div class=\"header-right\">\n      <span id=\"usageBadge\" class=\"usage\">오늘 사용: 0 / 200</span>\n      <button id=\"ttsToggle\" class=\"icon-btn\" title=\"AI 목소리 켜기/끄기\" aria-label=\"AI 목소리 켜기/끄기\">🔊</button>\n      <button id=\"settingsBtn\" class=\"icon-btn\" title=\"설정\" aria-label=\"설정\">⚙️</button>\n      <button id=\"closeBtn\" class=\"icon-btn\" title=\"나가기\" aria-label=\"나가기\">✕</button>\n    </div>\n  </header>\n\n  <!-- ================= 주제 + 목표 단어 ================= -->\n  <section class=\"topic-bar\">\n    <div class=\"topic-row\">\n      <div class=\"topic-text\">\n        <div class=\"topic-label\">TODAY'S TOPIC</div>\n        <h1 class=\"topic-title\" id=\"topicTitle\">주제를 설정해 주세요</h1>\n      </div>\n      <button id=\"endBtn\" class=\"end-btn\">대화 끝내기</button>\n    </div>\n    <div class=\"chips-head\" id=\"chipsHead\"><span>🎯 오늘의 단어를 대화에서 써 보세요!</span><span><b id=\"wordProgress\">0</b> / <span id=\"wordTotal\">0</span></span></div>\n    <div class=\"chips\" id=\"chips\"></div>\n  </section>\n\n  <div id=\"notice\" class=\"notice hidden\"></div>\n\n  <!-- ================= 대화 ================= -->\n  <main id=\"messages\" class=\"messages\" aria-live=\"polite\"></main>\n\n  <div id=\"statusLine\" class=\"status-line hidden\"></div>\n  <div id=\"repeatLine\" class=\"repeat-line hidden\">🔁 따라 말하기! 🎤를 누르고 선생님 문장을 말해 보세요</div>\n\n  <!-- ================= 입력 ================= -->\n  <footer class=\"composer\">\n    <button id=\"micBtn\" class=\"mic-btn\" title=\"말하기\" aria-label=\"말하기\">🎤</button>\n    <div class=\"input-wrap\">\n      <span id=\"recHint\" class=\"rec-hint hidden\">● 듣고 있어요… 다 말하면 🎤를 다시 누르세요</span>\n      <textarea id=\"input\" rows=\"1\" placeholder=\"🎤 누르고 말하거나 입력하세요\" autocomplete=\"off\" autocapitalize=\"sentences\" spellcheck=\"false\"></textarea>\n    </div>\n    <button id=\"sendBtn\" class=\"send-btn\">전송</button>\n  </footer>\n</div>\n\n<!-- ================= 설정 화면 ================= -->\n<div id=\"settingsScreen\" class=\"overlay hidden\" role=\"dialog\" aria-modal=\"true\" aria-label=\"설정\">\n  <div class=\"panel\">\n    <div class=\"panel-head\">\n      <h2>⚙️ 설정</h2>\n      <button class=\"icon-btn\" id=\"settingsClose\" aria-label=\"닫기\">✕</button>\n    </div>\n    <div class=\"panel-body\">\n\n      <div class=\"card\">\n        <h3>🔑 Gemini API 키</h3>\n        <div class=\"warn-box\">Google AI Studio에서 <b>'결제(Billing)가 연결되지 않은'</b> 프로젝트로 만든 키를 넣으세요. 결제가 연결된 키는 한도 초과 시 요금이 나올 수 있습니다.</div>\n        <div class=\"field\" style=\"margin-top:10px\">\n          <label for=\"sApiKey\">API 키</label>\n          <div class=\"inline\">\n            <input type=\"password\" id=\"sApiKey\" placeholder=\"AIza...\" autocomplete=\"off\" spellcheck=\"false\">\n            <button class=\"btn ghost\" id=\"sKeyShow\" type=\"button\">보기</button>\n            <button class=\"btn light\" id=\"sKeyTest\" type=\"button\">키 테스트</button>\n          </div>\n          <div id=\"sKeyResult\" class=\"test-result\"></div>\n          <span class=\"help\">키는 이 기기(브라우저)에만 저장되고, Google 서버로만 전송돼요.</span>\n        </div>\n      </div>\n\n      <div class=\"card\">\n        <h3>🙋 내 영어 이름</h3>\n        <div class=\"field\">\n          <label for=\"sName\">영어 이름 (선택) — 선생님이 이 이름으로 불러 줘요. 비우면 가입한 이름을 써요.</label>\n          <input type=\"text\" id=\"sName\" placeholder=\"예: Jimin\">\n        </div>\n        <div class=\"field hidden\">\n          <label>학년 (AI 난이도)</label>\n          <div class=\"seg\">\n            <label><input type=\"radio\" name=\"sGrade\" value=\"elementary\"> 초등</label>\n            <label><input type=\"radio\" name=\"sGrade\" value=\"middle\"> 중등</label>\n          </div>\n        </div>\n      </div>\n\n      <div class=\"card hidden\">\n        <h3>💬 오늘의 주제</h3>\n        <div class=\"field\">\n          <label for=\"sTopics\">저장된 주제 (한 줄에 하나)</label>\n          <textarea id=\"sTopics\" placeholder=\"My favorite season&#10;My best friend&#10;What I did last weekend\"></textarea>\n        </div>\n        <div class=\"field\">\n          <label for=\"sTopic\">오늘 대화할 주제 선택</label>\n          <select id=\"sTopic\"></select>\n        </div>\n      </div>\n\n      <div class=\"card hidden\">\n        <h3>🎯 오늘의 목표 단어 (10개)</h3>\n        <div class=\"field\">\n          <label for=\"sWords\">한 줄에 하나씩 \"단어 - 뜻\" 형식으로 붙여넣기</label>\n          <textarea id=\"sWords\" style=\"min-height:220px\" placeholder=\"season - 계절&#10;warm - 따뜻한&#10;go camping - 캠핑하러 가다&#10;...\"></textarea>\n          <div id=\"sWordsPreview\" class=\"word-preview\"></div>\n        </div>\n      </div>\n\n      <div class=\"card\">\n        <h3>🧭 대화 옵션</h3>\n        <label class=\"check\"><input type=\"checkbox\" id=\"sAutoTTS\"> AI 대답을 자동으로 읽어주기</label>\n        <div class=\"field\" style=\"margin-top:0\">\n          <label>틀린 문장 고쳐주는 방식</label>\n          <div class=\"seg\">\n            <label><input type=\"radio\" name=\"sFbStyle\" value=\"teacher\"> 🧑‍🏫 선생님처럼 + 따라 말하기</label>\n            <label><input type=\"radio\" name=\"sFbStyle\" value=\"card\"> 📝 카드로 보기</label>\n          </div>\n        </div>\n        <label class=\"check\"><input type=\"checkbox\" id=\"sFbOpen\"> (카드 방식일 때) 피드백 카드를 항상 펼쳐서 보기</label>\n        <label class=\"check\"><input type=\"checkbox\" id=\"sMicAutoSend\"> 🎤를 다시 누르면 바로 전송 (끄면 입력칸에서 고친 뒤 전송)</label>\n      </div>\n\n      <div class=\"card\">\n        <h3>🛡️ 무료 한도</h3>\n        <div class=\"grid2\">\n          <div class=\"field\" style=\"margin-top:0\">\n            <label for=\"sRpm\">분당 최대 요청 수</label>\n            <input type=\"number\" id=\"sRpm\" min=\"1\" max=\"60\">\n          </div>\n          <div class=\"field\" style=\"margin-top:0\">\n            <label for=\"sRpd\">하루 최대 요청 수</label>\n            <input type=\"number\" id=\"sRpd\" min=\"1\" max=\"5000\">\n          </div>\n        </div>\n        <p class=\"help\" style=\"font-size:12.5px;color:var(--muted);margin:8px 0 0\">하루 횟수는 한국 시간 자정에 0으로 돌아가요. <span id=\"sUsageInfo\"></span></p>\n        <div class=\"actions\" style=\"margin-top:8px\">\n          <button class=\"btn ghost\" id=\"sUnstop\" type=\"button\">오늘 사용 중지 해제 (선생님용)</button>\n        </div>\n      </div>\n\n      <div class=\"card\">\n        <details>\n          <summary>🔧 고급: AI 모델 이름</summary>\n          <div class=\"field\" style=\"margin-top:10px\">\n            <label for=\"sModelPrimary\">기본 모델</label>\n            <input type=\"text\" id=\"sModelPrimary\" spellcheck=\"false\">\n          </div>\n          <div class=\"field\">\n            <label for=\"sModelFallback\">대체 모델 (기본 모델 한도 초과 시)</label>\n            <input type=\"text\" id=\"sModelFallback\" spellcheck=\"false\">\n            <span class=\"help\">비워두면 파일 맨 위 CONFIG의 모델을 사용해요.</span>\n          </div>\n        </details>\n      </div>\n\n      <div class=\"card\">\n        <h3>📚 저장된 대화 기록</h3>\n        <p class=\"meta\" id=\"sHistoryInfo\" style=\"margin:0 0 8px\">-</p>\n        <div class=\"actions\">\n          <button class=\"btn light\" id=\"sExportAll\" type=\"button\">전체 기록 JSON 내보내기</button>\n          <button class=\"btn danger\" id=\"sClearHistory\" type=\"button\">기록 모두 지우기</button>\n        </div>\n      </div>\n\n      <button class=\"btn big\" id=\"settingsSave\" type=\"button\">💾 저장하기</button>\n    </div>\n  </div>\n</div>\n\n<!-- ================= 세션 종료 리포트 ================= -->\n<div id=\"reportScreen\" class=\"overlay hidden\" role=\"dialog\" aria-modal=\"true\" aria-label=\"대화 리포트\">\n  <div class=\"panel\">\n    <div class=\"panel-head\">\n      <h2>📋 오늘의 스피킹 리포트</h2>\n    </div>\n    <div class=\"panel-body\" id=\"reportBody\"></div>\n  </div>\n</div>\n\n<div id=\"toast\" class=\"toast\"></div>\n\n</div>";
+
+/* =========================================================
+   CONFIG — 모델 이름·기본 한도는 여기 한 곳만 고치면 됩니다
+   ========================================================= */
+const CONFIG = {
+  MODEL_PRIMARY:  'gemini-3.8-flash',        // 기본 모델
+  MODEL_FALLBACK: 'gemini-3.5-flash-lite',   // 429(한도 초과) 시 대체 모델
+  API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models/',
+  DEFAULT_RPM: 8,            // 분당 최대 요청 수 (기본값)
+  DEFAULT_RPD: 200,          // 하루 최대 요청 수 (기본값)
+  HISTORY_TURNS: 10,         // AI에게 보내는 최근 대화 턴 수 (학생+AI = 1턴)
+  MAX_REPLY_SENTENCES: 3,    // AI 대답 최대 문장 수
+  MAX_TARGET_WORDS: 10,      // 목표 단어 개수
+  TEMPERATURE: 0.7,
+  EXTRA_GENERATION_CONFIG: {},   // 필요하면 generationConfig에 추가할 값
+  // 모델별 '생각(thinking)' 수준. 기본값(high/medium)은 답이 매우 느려지므로 낮춤.
+  // gemini-3.8-flash는 'minimal'을 지원하지 않아 'low' 사용. 모델이 거부(400)하면 자동으로 빼고 다시 보냄.
+  THINKING_LEVEL: {
+    'gemini-3.8-flash': 'low',
+  },
+  REQUEST_TIMEOUT_MS: 25000, // 이 시간 안에 답이 없으면 대체 모델로 1회 재시도
+  TIMEZONE: 'Asia/Seoul',
+  MAX_SAVED_SESSIONS: 300,
+};
+
+/* 테스트용 디버그 스위치 (브라우저 콘솔에서 사용)
+   EJ_DEBUG.force429 = 2  → 다음 요청 2번을 가짜 429로 만듦 (모델 전환 → 사용 중지 흐름 확인)
+   EJ_DEBUG.mock = true   → API 키 없이 가짜 AI 응답으로 화면 동작 확인 */
+const EJ_DEBUG = window.EJ_SPEAK_DEBUG = { force429: 0, mock: false };
+
+/* =========================================================
+   localStorage 도우미
+   ========================================================= */
+const LS = {
+  apiKey: 'ej_speaking_apiKey',
+  settings: 'ej_speaking_settings',
+  usage: 'ej_speaking_usage',
+  sessions: 'ej_speaking_sessions',
+  current: 'ej_speaking_current',
+};
+function loadJSON(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+function saveJSON(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
+}
+function getApiKey() { try { return localStorage.getItem(LS.apiKey) || ''; } catch { return ''; } }
+function setApiKey(k) { try { k ? localStorage.setItem(LS.apiKey, k) : localStorage.removeItem(LS.apiKey); } catch {} }
+
+/* =========================================================
+   공통 유틸
+   ========================================================= */
+let ROOT = null, HOST = null;
+const $ = (id) => ROOT.getElementById(id);
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+/** 한국 시간 기준 날짜 YYYY-MM-DD */
+function seoulDate(d = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: CONFIG.TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+/** 한국 시간 기준 YYYY-MM-DD HH:mm */
+function seoulDateTime(d = new Date()) {
+  const t = new Intl.DateTimeFormat('en-GB', { timeZone: CONFIG.TIMEZONE, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  return seoulDate(d) + ' ' + t;
+}
+let toastTimer = null;
+function toast(msg, type = '', ms = 2600) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast ' + type; }, ms);
+}
+function showNotice(msg, type = '') {
+  const el = $('notice');
+  el.className = 'notice ' + type;
+  el.innerHTML = `<span>${escapeHtml(msg)}</span><button class="x" aria-label="닫기">✕</button>`;
+  el.querySelector('.x').onclick = hideNotice;
+}
+function hideNotice() { $('notice').className = 'notice hidden'; }
+
+/* =========================================================
+   설정
+   ========================================================= */
+const DEFAULT_SETTINGS = {
+  name: '',
+  grade: 'elementary',
+  topics: ['My favorite season', 'My best friend', 'What I did last weekend'],
+  currentTopic: 'My favorite season',
+  wordsText: '',
+  rpm: CONFIG.DEFAULT_RPM,
+  rpd: CONFIG.DEFAULT_RPD,
+  autoTTS: true,
+  feedbackAlwaysOpen: false,
+  feedbackStyle: 'teacher',   // 'teacher' = 선생님이 말로 고쳐주고 따라 말하기 / 'card' = 피드백 카드
+  micAutoSend: false,
+  modelPrimary: '',
+  modelFallback: '',
+};
+let settings = Object.assign({}, DEFAULT_SETTINGS, loadJSON(LS.settings, {}));
+function saveSettings() { saveJSON(LS.settings, settings); }
+function primaryModel() { return (settings.modelPrimary || '').trim() || CONFIG.MODEL_PRIMARY; }
+function fallbackModel() { return (settings.modelFallback || '').trim() || CONFIG.MODEL_FALLBACK; }
+let ASSIGN = null;   // { hwId, topic, words:[{word,meaning}], level, name, onSubmit, preview }
+function curGrade() { return ASSIGN && ASSIGN.level === 'middle' ? 'middle' : 'elementary'; }
+function gradeText(g = curGrade()) { return g === 'middle' ? 'middle school' : 'elementary school'; }
+function gradeKo(g = curGrade()) { return g === 'middle' ? '중등' : '초등'; }
+
+/**
+ * "단어 - 뜻" 목록 파싱. 구분자: - – — : = 탭, 또는 한글이 시작되는 위치.
+ * 앞의 번호(1. 2) 등)는 제거. 최대 10개.
+ */
+function parseWords(text) {
+  const out = [];
+  const seen = new Set();
+  for (let line of String(text || '').split(/\r?\n/)) {
+    line = line.trim().replace(/^\d+\s*[.)]\s*/, '').replace(/^[-•*]\s+/, '');
+    if (!line) continue;
+    let word = '', meaning = '';
+    const m = line.match(/^(.+?)\s*(?:\t|\s[-–—]\s|:|=)\s*(.*)$/);
+    if (m) { word = m[1]; meaning = m[2]; }
+    else {
+      const k = line.search(/[가-힣ㄱ-ㅎㅏ-ㅣ]/);
+      if (k > 0) { word = line.slice(0, k); meaning = line.slice(k); }
+      else if (line.includes('-') && !/^[A-Za-z]+-[A-Za-z]+$/.test(line)) {
+        const i = line.indexOf('-'); word = line.slice(0, i); meaning = line.slice(i + 1);
+      } else { word = line; }
+    }
+    word = word.replace(/[\s\-–—:=,]+$/, '').trim();
+    meaning = meaning.trim();
+    if (!/[A-Za-z]/.test(word)) continue;
+    const key = word.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ word, meaning });
+  }
+  return out;
+}
+function targetWords() { return ((ASSIGN && ASSIGN.words) || []).filter(w => w && w.word).slice(0, CONFIG.MAX_TARGET_WORDS); }
+function isConfigured() { return (!!getApiKey() || EJ_DEBUG.mock) && !!(ASSIGN && ASSIGN.topic); }
+
+/* =========================================================
+   무료 한도 (사용량 카운터)
+   ========================================================= */
+function getUsage() {
+  let u = loadJSON(LS.usage, null);
+  const today = seoulDate();
+  if (!u || u.date !== today) u = { date: today, count: 0, recent: [], stopped: false };  // 자정(서울) 초기화
+  const now = Date.now();
+  u.recent = (u.recent || []).filter(t => now - t < 60000 && t <= now);
+  return u;
+}
+function saveUsage(u) { saveJSON(LS.usage, u); }
+/** 요청 1회 기록 (성공/실패 상관없이 실제로 보낸 요청은 모두 셈) */
+function recordRequest() {
+  const u = getUsage();
+  u.count += 1;
+  u.recent.push(Date.now());
+  saveUsage(u);
+  updateUsageBadge();
+}
+/** 지금 요청을 보낼 수 있는지 확인 */
+function checkQuota() {
+  const u = getUsage();
+  const rpd = Math.max(1, +settings.rpd || CONFIG.DEFAULT_RPD);
+  const rpm = Math.max(1, +settings.rpm || CONFIG.DEFAULT_RPM);
+  if (u.stopped) return { ok: false, reason: 'stopped' };
+  if (u.count >= rpd) return { ok: false, reason: 'daily' };
+  if (u.recent.length >= rpm) {
+    const wait = Math.max(1, Math.ceil((u.recent[0] + 60000 - Date.now()) / 1000));
+    return { ok: false, reason: 'minute', wait };
+  }
+  return { ok: true };
+}
+function stopForToday() {
+  const u = getUsage(); u.stopped = true; saveUsage(u);
+}
+function updateUsageBadge() {
+  const u = getUsage();
+  const rpd = +settings.rpd || CONFIG.DEFAULT_RPD;
+  const el = $('usageBadge');
+  el.textContent = `오늘 사용: ${u.count} / ${rpd}`;
+  el.classList.toggle('warn', u.count >= rpd * 0.9 || u.stopped);
+}
+
+/* =========================================================
+   앱 상태
+   ========================================================= */
+const state = {
+  session: null,     // 현재 대화 세션
+  busy: false,       // AI 응답 대기 중
+  model: null,       // 이번 세션에서 쓰는 모델 (429 시 대체 모델로 전환)
+  lockTimer: null,
+};
+
+function newSession() {
+  const words = targetWords();
+  const s = {
+    id: uid(),
+    startedAt: Date.now(),
+    topic: ASSIGN.topic,
+    studentName: (ASSIGN.name || '').trim(),
+    grade: curGrade(),
+    hwId: ASSIGN.hwId || '',
+    words,
+    wordCounts: Object.fromEntries(words.map(w => [w.word, 0])),
+    messages: [],
+    celebrated: false,
+    pending: null,                       // 따라 말하기 대기 중일 때: { target, attempts, reply, model, coachId }
+    repeatStats: { asked: 0, success: 0 },
+  };
+  const who = s.studentName || 'there';
+  const opening = curGrade() === 'middle'
+    ? `Hi ${who}! Today we're going to talk about "${s.topic}". What's the first thing that comes to mind?`
+    : `Hi ${who}! Let's talk about "${s.topic}" today. What do you want to tell me about it?`;
+  s.messages.push({ id: uid(), role: 'model', text: opening, local: true, ts: Date.now() });
+  return s;
+}
+function curKey() { return LS.current + ':' + ((ASSIGN && ASSIGN.hwId) || 'free'); }
+function saveCurrent() { if (state.session) saveJSON(curKey(), state.session); }
+function userTurns(s = state.session) { return s ? s.messages.filter(m => m.role === 'user' && !m.kind) : []; }
+
+/* =========================================================
+   문장 분리 & 3문장 제한
+   ========================================================= */
+const ABBREVIATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'St.', 'Jr.', 'Sr.', 'Mt.', 'No.', 'vs.', 'etc.',
+  'e.g.', 'E.g.', 'i.e.', 'I.e.', 'a.m.', 'p.m.', 'A.M.', 'P.M.', 'U.S.', 'U.K.', 'U.S.A.'];
+function splitSentences(text) {
+  const DOT = '\u0001';
+  let t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!t) return [];
+  for (const a of ABBREVIATIONS) {
+    t = t.replace(new RegExp('(^|[^A-Za-z])' + escapeRegex(a), 'g'), (m, pre) => pre + a.replace(/\./g, DOT));
+  }
+  t = t.replace(/(\d)\.(\d)/g, `$1${DOT}$2`);            // 3.5 같은 소수
+  const parts = t.match(/[^.!?]+(?:[.!?]+["'”’)\]]*|$)/g) || [t];
+  return parts.map(s => s.replace(new RegExp(DOT, 'g'), '.').trim()).filter(Boolean);
+}
+/** 3문장 초과 시 앞 3문장만. 단, 질문이 하나도 안 남으면 앞 2문장 + 첫 질문 문장으로 맞춤 */
+function limitSentences(text, max = CONFIG.MAX_REPLY_SENTENCES) {
+  const ss = splitSentences(text);
+  if (ss.length <= max) return ss.join(' ');
+  let kept = ss.slice(0, max);
+  if (!kept.some(s => s.includes('?'))) {
+    const q = ss.slice(max).find(s => s.includes('?'));
+    if (q) kept = ss.slice(0, max - 1).concat(q);
+  }
+  return kept.join(' ');
+}
+
+/* =========================================================
+   목표 단어 판정
+   ========================================================= */
+/** 기본 변형: -s / -es / -ed / -d / -ing (+ e 탈락, y→ies/ied, 자음 겹침) */
+function wordForms(w) {
+  w = w.toLowerCase();
+  const f = new Set([w, w + 's', w + 'es', w + 'ed', w + 'd', w + 'ing']);
+  if (/e$/.test(w)) f.add(w.slice(0, -1) + 'ing');
+  if (/[^aeiou]y$/.test(w)) { f.add(w.slice(0, -1) + 'ies'); f.add(w.slice(0, -1) + 'ied'); }
+  if (/(^|[^aeiou])[aeiou][^aeiouwxy]$/.test(w)) { const l = w.slice(-1); f.add(w + l + 'ed'); f.add(w + l + 'ing'); }
+  return [...f].sort((a, b) => b.length - a.length);
+}
+/** 단어(또는 구)를 찾는 정규식. 구는 첫 단어만 변형 허용 (예: go camping → went camping은 AI 판정에 맡김) */
+function wordRegex(target) {
+  const parts = target.trim().toLowerCase().split(/\s+/);
+  const first = '(?:' + wordForms(parts[0]).map(escapeRegex).join('|') + ')';
+  const rest = parts.slice(1).map(escapeRegex).join('\\s+');
+  return new RegExp("(?<![A-Za-z])" + first + (rest ? '\\s+' + rest : '') + "(?![A-Za-z])", 'gi');
+}
+/**
+ * 이번 학생 문장에서 '올바르게' 사용한 목표 단어 판정
+ * = (AI의 target_words_used ∪ 클라이언트 판정) − (word_usage 오류로 지적된 단어)
+ */
+function judgeWordUsage(text, ai) {
+  const result = {};
+  const reported = (ai && Array.isArray(ai.target_words_used) ? ai.target_words_used : []).map(x => String(x).toLowerCase().trim());
+  const misusedText = (ai && Array.isArray(ai.corrections) ? ai.corrections : [])
+    .filter(c => c && c.type === 'word_usage').map(c => String(c.original || '')).join(' \n ');
+  for (const { word } of state.session.words) {
+    const lw = word.toLowerCase();
+    const hits = (text.match(wordRegex(word)) || []).length;
+    const aiSays = reported.some(r => r === lw || wordRegex(word).test(r));
+    const misused = misusedText && (wordRegex(word).test(misusedText) || misusedText.toLowerCase().includes(lw));
+    if ((hits > 0 || aiSays) && !misused) result[word] = Math.max(1, hits);
+  }
+  return result;
+}
+
+/* =========================================================
+   Gemini 호출
+   ========================================================= */
+const RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    reply: { type: 'STRING' },
+    corrections: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          original: { type: 'STRING' },
+          corrected: { type: 'STRING' },
+          reason_ko: { type: 'STRING' },
+          type: { type: 'STRING', enum: ['grammar', 'content', 'word_usage'] },
+          // 리포트의 '자주 틀린 문법 유형 TOP 3' 집계용 (추가 필드)
+          grammar_point_ko: { type: 'STRING', enum: ['시제', '관사', '전치사', '주어-동사 일치', '단수/복수', '어순', '동사 형태', '대명사', '단어 선택', '내용', '기타'] },
+        },
+        required: ['original', 'corrected', 'reason_ko', 'type', 'grammar_point_ko'],
+      },
+    },
+    better_expressions: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: { original: { type: 'STRING' }, better: { type: 'STRING' }, note_ko: { type: 'STRING' } },
+        required: ['original', 'better', 'note_ko'],
+      },
+    },
+    target_words_used: { type: 'ARRAY', items: { type: 'STRING' } },
+    is_perfect: { type: 'BOOLEAN' },
+  },
+  required: ['reply', 'corrections', 'better_expressions', 'target_words_used', 'is_perfect'],
+  propertyOrdering: ['reply', 'corrections', 'better_expressions', 'target_words_used', 'is_perfect'],
+};
+
+/** 시스템 프롬프트 (변수 치환) */
+function buildSystemPrompt() {
+  const s = state.session;
+  const grade = gradeText(s.grade);
+  const name = s.studentName || 'the student';
+  const unused = s.words.filter(w => !s.wordCounts[w.word]).map(w => w.word);
+  const all = s.words.map(w => w.word);
+  const opening = s.messages.find(m => m.local);
+  return `You are a friendly English conversation partner for a Korean ${grade} student named ${name}.
+Topic: ${s.topic}. Talk naturally about this topic like a kind native-speaking teacher.
+RULES:
+1. "reply" must be 1-3 short sentences and end with exactly ONE question. Never longer.
+2. NEVER mention mistakes or corrections inside "reply". Keep the conversation flowing.
+   Put all corrections only in "corrections" and "better_expressions".
+3. Check the student's LAST message for grammar errors, wrong facts, and unnatural phrasing.
+   Ignore capitalization and punctuation from speech recognition. Do not nitpick.
+4. Unused target words: ${unused.length ? unused.join(', ') : '(none - all used! just chat naturally)'}. When it fits naturally, ask a question that invites
+   the student to use ONE of these words. Do not force more than one per turn.
+5. Use vocabulary suited to a ${grade} learner (elementary: simple / middle school: moderate).
+6. Keep everything age-appropriate. If the student goes off-topic or shares something unsafe,
+   gently steer back to the topic.
+7. Write "reason_ko" and "note_ko" in short, easy Korean.
+
+OUTPUT FIELDS (JSON):
+- "reply": your conversational answer only (no corrections, no praise of grammar).
+- "corrections": one item per real mistake in the student's LAST message only.
+  "original" = the exact wrong words the student said, "corrected" = a short, natural, complete sentence (max 15 words) the student can repeat aloud,
+  most important mistake first,
+  "reason_ko" = one short Korean sentence, "type" = "grammar" | "content" (factually wrong) | "word_usage" (a target word used with the wrong meaning or form),
+  "grammar_point_ko" = the closest category (use "내용" for content errors). Empty array if none.
+- "better_expressions": at most 2, only when a clearly more natural native expression exists. Otherwise empty.
+- "target_words_used": target words (written exactly as in the list) that the student used CORRECTLY in the LAST message.
+  If a target word was misused, add a "word_usage" correction that includes the word in "original" and do NOT list it here.
+- "is_perfect": true only when "corrections" is empty.
+All target words: ${all.length ? all.join(', ') : '(none)'}.
+${opening ? `The conversation started with your greeting: "${opening.text}"` : ''}`;
+}
+
+/** 요청 본문 만들기: 최근 N턴 + systemInstruction + JSON 스키마 */
+function buildRequestBody() {
+  const msgs = state.session.messages.filter(m => (m.role === 'user' || m.role === 'model') && !m.failed && !m.kind);   // 따라 말하기 대화는 AI에게 보내지 않음
+  let recent = msgs.slice(-(CONFIG.HISTORY_TURNS * 2));
+  while (recent.length && recent[0].role !== 'user') recent = recent.slice(1);   // 반드시 user로 시작
+  return {
+    systemInstruction: { parts: [{ text: buildSystemPrompt() }] },
+    contents: recent.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+    generationConfig: Object.assign({
+      temperature: CONFIG.TEMPERATURE,
+      responseMimeType: 'application/json',
+      responseSchema: RESPONSE_SCHEMA,
+    }, CONFIG.EXTRA_GENERATION_CONFIG),
+  };
+}
+
+/** Gemini REST 호출 1회. API 키는 헤더(x-goog-api-key)로만 보냄 */
+const noThinkingModels = new Set();   // thinkingConfig를 거부한 모델 기억
+async function geminiRequest(model, body) {
+  // 모델별 thinking 수준 적용 (속도 개선)
+  const level = CONFIG.THINKING_LEVEL[model];
+  const useThinking = !!(level && body.generationConfig && !noThinkingModels.has(model));
+  if (useThinking) {
+    body = { ...body, generationConfig: { ...body.generationConfig, thinkingConfig: { thinkingLevel: level } } };
+  }
+  const r = await geminiRequestRaw(model, body);
+  if (useThinking && r.status === 400 && /think/i.test(String(r.data && r.data.error && r.data.error.message))) {
+    noThinkingModels.add(model);   // 이 모델은 thinkingConfig 없이 다시 보냄
+    const { thinkingConfig, ...gc } = body.generationConfig;
+    return geminiRequestRaw(model, { ...body, generationConfig: gc });
+  }
+  return r;
+}
+async function geminiRequestRaw(model, body) {
+  recordRequest();
+  refreshLock();
+  if (EJ_DEBUG.force429 > 0) {
+    EJ_DEBUG.force429--;
+    await new Promise(r => setTimeout(r, 300));
+    return { ok: false, status: 429, data: { error: { status: 'RESOURCE_EXHAUSTED' } } };
+  }
+  if (EJ_DEBUG.mock) return mockGemini(body);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), CONFIG.REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(CONFIG.API_BASE + encodeURIComponent(model) + ':generateContent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getApiKey() },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    let data = null;
+    try { data = await res.json(); } catch {}
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, network: true, timeout: e && e.name === 'AbortError' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** HTTP 오류 → 한국어 안내 (API 키나 원본 응답은 절대 표시하지 않음) */
+function errorMessage(r) {
+  if (r.status === 0) return r.timeout ? '⏱️ AI 응답이 너무 늦어요. 잠시 후 다시 보내 주세요.' : '📶 인터넷 연결을 확인해 주세요. (네트워크 오류)';
+  const err = (r.data && r.data.error) || {};
+  const msg = String(err.message || '');
+  const reasons = JSON.stringify(err.details || '');
+  if (r.status === 400) {
+    if (/API key|API_KEY/i.test(msg + reasons)) return '🔑 API 키가 올바르지 않아요. 설정에서 키를 다시 확인해 주세요.';
+    return '⚠️ 요청에 문제가 있어요 (400). 설정의 모델 이름을 확인하거나 선생님께 알려 주세요.';
+  }
+  if (r.status === 401 || r.status === 403) return '🔑 API 키를 사용할 수 없어요 (권한 오류). 설정에서 키를 확인해 주세요.';
+  if (r.status === 404) return '🔍 AI 모델을 찾을 수 없어요. 설정의 모델 이름을 확인하세요.';
+  if (r.status === 429) return '🛑 무료 사용량을 다 썼어요. 오늘 연습은 여기까지! 내일 또 만나요.';
+  if (r.status >= 500) return '🛠️ AI 서버가 잠시 바빠요. 조금 뒤에 다시 보내 주세요.';
+  return `⚠️ 알 수 없는 오류가 났어요 (${r.status}).`;
+}
+
+/** 응답에서 텍스트 꺼내고 JSON 파싱 */
+function parseAIResponse(data) {
+  const cand = data && data.candidates && data.candidates[0];
+  const text = cand && cand.content && Array.isArray(cand.content.parts)
+    ? cand.content.parts.filter(p => !p.thought).map(p => p.text || '').join('').trim() : '';
+  if (!text) return { json: null, text: '' };
+  let raw = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  try {
+    const j = JSON.parse(raw);
+    if (!j || typeof j.reply !== 'string') throw new Error('no reply');
+    return {
+      json: {
+        reply: j.reply,
+        corrections: (Array.isArray(j.corrections) ? j.corrections : []).filter(c => c && (c.original || c.corrected)),
+        better_expressions: (Array.isArray(j.better_expressions) ? j.better_expressions : []).filter(b => b && b.better),
+        target_words_used: Array.isArray(j.target_words_used) ? j.target_words_used : [],
+        is_perfect: !!j.is_perfect,
+      },
+      text,
+    };
+  } catch {
+    return { json: null, text };
+  }
+}
+/** JSON이 깨졌을 때 reply만이라도 뽑아내기 */
+function salvageReply(text) {
+  const m = String(text || '').match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (m) { try { return JSON.parse('"' + m[1] + '"'); } catch {} }
+  if (/^\s*[{[]/.test(text)) return '';
+  return String(text || '').split(/[{[]/)[0].trim();   // 뒤에 붙은 깨진 JSON 조각은 버림
+}
+
+/**
+ * 한 턴 = Gemini 호출 1회.
+ * 429 → 대체 모델로 1회 재시도 → 또 429면 오늘 사용 중지.
+ * JSON 파싱 실패 → 1회 재시도 → 그래도 실패하면 텍스트만 reply로.
+ */
+async function askAI() {
+  const body = buildRequestBody();
+  const primary = primaryModel(), fallback = fallbackModel();
+  let model = state.model || primary;
+  let r = await geminiRequest(model, body);
+
+  if (r.status === 429) {
+    if (model !== fallback) {
+      state.model = fallback;
+      toast('기본 AI가 바빠서 대체 AI로 바꿨어요 🔄');
+      const q = checkQuota();
+      if (!q.ok) return { ok: false, error: quotaMessage(q) };
+      r = await geminiRequest(fallback, body);
+      if (r.status === 429) { stopForToday(); return { ok: false, error: errorMessage(r), stopped: true }; }
+    } else {
+      stopForToday();
+      return { ok: false, error: errorMessage(r), stopped: true };
+    }
+  }
+  // 너무 오래 걸리면(시간 초과) 더 빠른 대체 모델로 1회만 재시도
+  if (r.status === 0 && r.timeout && model !== fallback && checkQuota().ok) {
+    state.model = fallback;
+    setTypingNote('조금 더 빠른 AI로 다시 물어보는 중…');
+    r = await geminiRequest(fallback, body);
+    if (r.status === 429) { stopForToday(); return { ok: false, error: errorMessage(r), stopped: true }; }
+  }
+  if (!r.ok) return { ok: false, error: errorMessage(r) };
+
+  let parsed = parseAIResponse(r.data);
+  if (!parsed.json && checkQuota().ok) {
+    const r2 = await geminiRequest(state.model || primary, body);   // JSON 실패 시 1회만 재시도
+    if (r2.ok) {
+      const p2 = parseAIResponse(r2.data);
+      if (p2.json || p2.text) parsed = p2;
+    }
+  }
+  return { ok: true, json: parsed.json, text: parsed.text };
+}
+
+/* ---------- 테스트용 가짜 응답 (EJ_DEBUG.mock = true) ---------- */
+async function mockGemini(body) {
+  await new Promise(r => setTimeout(r, 500));
+  const last = body.contents[body.contents.length - 1].parts[0].text;
+  const corrections = [];
+  if (/\bgoed\b/i.test(last)) corrections.push({ original: 'goed', corrected: last.replace(/goed/i, 'went'), reason_ko: 'go의 과거형은 went예요.', type: 'grammar', grammar_point_ko: '시제' });
+  if (/\bhe like\b/i.test(last)) corrections.push({ original: 'he like', corrected: last.replace(/he like/i, 'he likes'), reason_ko: '주어가 he면 동사에 -s를 붙여요.', type: 'grammar', grammar_point_ko: '주어-동사 일치' });
+  const used = state.session.words.filter(w => wordRegex(w.word).test(last)).map(w => w.word);
+  const json = {
+    reply: 'That sounds really fun. I like that idea too. You must have had a great time. Tell me more about it. What did you do next?',
+    corrections,
+    better_expressions: /\bvery like\b/i.test(last) ? [{ original: 'very like', better: 'really like', note_ko: '“really like”가 더 자연스러워요.' }] : [],
+    target_words_used: used,
+    is_perfect: corrections.length === 0,
+  };
+  return { ok: true, status: 200, data: { candidates: [{ content: { parts: [{ text: JSON.stringify(json) }] } }] } };
+}
+
+/* =========================================================
+   한도 잠금 UI (분당 카운트다운 / 하루 한도 / 사용 중지)
+   ========================================================= */
+function quotaMessage(q) {
+  if (q.reason === 'minute') return `⏳ ${q.wait}초 후 다시 말할 수 있어요`;
+  if (q.reason === 'daily') return '🌙 오늘 연습은 여기까지! 내일 또 만나요';
+  if (q.reason === 'stopped') return '🌙 오늘 무료 사용량을 다 썼어요. 오늘 연습은 여기까지! 내일 또 만나요';
+  return '';
+}
+function refreshLock() {
+  const q = checkQuota();
+  const line = $('statusLine');
+  clearTimeout(state.lockTimer);
+  if (!q.ok) {
+    line.textContent = quotaMessage(q);
+    line.className = 'status-line' + (q.reason === 'minute' ? '' : ' stop');
+    // 분당 잠금은 1초마다 카운트다운, 하루 잠금은 1분마다 날짜 변경 확인
+    state.lockTimer = setTimeout(refreshLock, q.reason === 'minute' ? 1000 : 60000);
+  } else {
+    line.className = 'status-line hidden';
+  }
+  updateUsageBadge();
+  updateComposer();
+  return q;
+}
+function updateComposer() {
+  const q = checkQuota();
+  const repeating = !!(state.session && state.session.pending);
+  // 따라 말하기는 AI 요청을 쓰지 않으므로 한도와 상관없이 가능
+  const blocked = state.busy || (!repeating && (!q.ok || !isConfigured()));
+  $('repeatLine').classList.toggle('hidden', !repeating);
+  $('input').placeholder = repeating ? '🔁 선생님 문장을 따라 말해 보세요' : '🎤 누르고 말하거나 입력하세요';
+  $('sendBtn').disabled = blocked;
+  $('micBtn').disabled = (blocked && !recognizer.recording) || recognizer.unavailable;
+  $('endBtn').disabled = state.busy;
+}
+
+/* =========================================================
+   음성 출력 (TTS) — AI 대답만 자동 재생, 피드백은 🔊 누를 때만
+   ========================================================= */
+const tts = {
+  supported: 'speechSynthesis' in window,
+  voices: [],
+  load() { if (this.supported) this.voices = speechSynthesis.getVoices(); },
+  pick() {
+    const en = this.voices.filter(v => /^en[-_]US/i.test(v.lang));
+    const prefer = /Google US English|Samantha|Aria|Jenny|Ava|Allison|Microsoft.*Online|Zira/i;
+    return en.find(v => prefer.test(v.name)) || en[0] || this.voices.find(v => /^en/i.test(v.lang)) || null;
+  },
+  speak(text) { this.speakSeq([{ text }]); },
+  /** 여러 문장을 차례로 읽기. slow:true 면 천천히 (따라 말할 문장) */
+  speakSeq(parts) {
+    if (!this.supported) return;
+    speechSynthesis.cancel();
+    const v = this.pick();
+    const base = curGrade() === 'middle' ? 0.98 : 0.9;
+    const list = parts.filter(p => p && p.text).map(p => {
+      const u = new SpeechSynthesisUtterance(String(p.text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim());
+      u.lang = 'en-US';
+      if (v) u.voice = v;
+      u.rate = p.slow ? base * 0.82 : base;
+      return u;
+    });
+    setTimeout(() => list.forEach(u => speechSynthesis.speak(u)), 60);   // cancel 직후 바로 말하면 무시되는 크롬 버그 회피
+  },
+  stop() { if (this.supported) speechSynthesis.cancel(); },
+};
+if (tts.supported) { tts.load(); speechSynthesis.onvoiceschanged = () => tts.load(); }
+
+/* =========================================================
+   음성 인식 (STT) — 🎤 누르면 녹음, 다시 누르면 멈춤(옵션: 바로 전송)
+   ========================================================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognizer = {
+  rec: null, recording: false, unavailable: !SR, base: '', finals: '', sendAfterStop: false,
+
+  start() {
+    if (this.unavailable || this.recording) return;
+    tts.stop();
+    this.base = $('input').value.trim();
+    this.finals = '';
+    this.sendAfterStop = false;
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) this.finals += r[0].transcript + ' ';
+        else interim += r[0].transcript;
+      }
+      $('input').value = [this.base, this.finals + interim].join(' ').replace(/\s+/g, ' ').trim();
+      autosize();
+    };
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        this.disable('🎤 마이크 권한이 없어서 글자로 입력하기로 바꿨어요. 키보드로 영어 문장을 써 주세요.');
+      } else if (e.error === 'network') {
+        toast('음성 인식 연결에 실패했어요. 글자로 입력해 주세요.');
+        this.recording = false;
+      } else if (e.error === 'audio-capture') {
+        this.disable('🎤 마이크를 찾을 수 없어요. 글자로 입력해 주세요.');
+      }
+      // no-speech, aborted 는 조용히 무시
+    };
+    rec.onend = () => {
+      // 크롬은 조용하면 자동으로 끝나므로, 아직 녹음 중이면 다시 시작
+      if (this.recording && !this.unavailable) { try { rec.start(); return; } catch {} }
+      this.recording = false;
+      this.updateUI();
+      if (this.sendAfterStop && $('input').value.trim()) sendMessage();
+      else $('input').focus();
+    };
+    this.rec = rec;
+    try { rec.start(); this.recording = true; } catch { this.recording = false; }
+    this.updateUI();
+  },
+  stop(sendAfter = false) {
+    if (!this.recording) return;
+    this.recording = false;
+    this.sendAfterStop = sendAfter;
+    try { this.rec && this.rec.stop(); } catch {}
+    this.updateUI();
+  },
+  disable(msg) {
+    this.unavailable = true;
+    this.recording = false;
+    try { this.rec && this.rec.abort(); } catch {}
+    $('micBtn').classList.add('hidden');
+    showNotice(msg, 'warn');
+    this.updateUI();
+    $('input').focus();
+  },
+  updateUI() {
+    const b = $('micBtn');
+    b.classList.toggle('rec', this.recording);
+    b.textContent = this.recording ? '⏹' : '🎤';
+    b.title = this.recording ? '다시 누르면 멈춰요' : '말하기';
+    $('recHint').classList.toggle('hidden', !this.recording);
+    updateComposer();
+  },
+};
+
+/* =========================================================
+   화면 그리기: 단어 칩
+   ========================================================= */
+function renderHeader() {
+  const s = state.session;
+  $('topicTitle').textContent = s && s.topic ? s.topic : '주제를 설정해 주세요';
+  $('ttsToggle').textContent = settings.autoTTS ? '🔊' : '🔇';
+  $('ttsToggle').classList.toggle('off', !settings.autoTTS);
+  renderChips();
+  updateUsageBadge();
+}
+function renderChips(popWords = []) {
+  const s = state.session;
+  const box = $('chips');
+  const words = s ? s.words : [];
+  $('chipsHead').classList.toggle('hidden', !words.length);
+  box.classList.toggle('hidden', !words.length);
+  box.innerHTML = words.map(w => {
+    const c = s.wordCounts[w.word] || 0;
+    return `<span class="chip ${c ? 'used' : ''} ${popWords.includes(w.word) ? 'pop' : ''}" title="${escapeHtml(w.meaning)}">
+      ${c ? '✅' : ''}<b>${escapeHtml(w.word)}</b>${w.meaning ? `<small>${escapeHtml(w.meaning)}</small>` : ''}${c ? `<span class="cnt">×${c}</span>` : ''}</span>`;
+  }).join('');
+  const usedN = words.filter(w => s.wordCounts[w.word]).length;
+  $('wordProgress').textContent = usedN;
+  $('wordTotal').textContent = words.length;
+}
+
+/* =========================================================
+   화면 그리기: 말풍선 & 피드백 카드
+   ========================================================= */
+function highlightWords(text, used) {
+  let html = escapeHtml(text);
+  for (const w of Object.keys(used || {})) {
+    html = html.replace(wordRegex(w), m => `<mark>${m}</mark>`);
+  }
+  return html;
+}
+function renderMessage(m) {
+  const box = $('messages');
+  const row = document.createElement('div');
+  row.className = 'row ' + m.role;
+  row.dataset.id = m.id;
+  if (m.role === 'user' && m.kind === 'repeat') {
+    row.classList.add('repeat');
+    row.innerHTML = `<div class="who">${escapeHtml(state.session.studentName || 'Me')}</div>
+      <div class="repeat-tag">🔁 따라 말하기</div>
+      <div class="bubble">${escapeHtml(m.text)}</div>`;
+  } else if (m.kind === 'coach') {
+    const s = state.session;
+    const isCurrent = s.pending && s.pending.coachId === m.id;
+    row.innerHTML = `<div class="who">🦒 EJ Teacher</div>
+      <div class="bubble coach">${escapeHtml(m.intro)}
+        <div class="coach-target"><span>“${markMissing(m.target, m.missing)}”</span><button class="say" type="button" aria-label="문장 듣기">🔊</button></div>${escapeHtml(m.outro)}</div>
+      ${m.reason ? `<div class="coach-hint">💬 ${escapeHtml(m.reason)}</div>` : ''}
+      <div class="bubble-tools"><button class="mini-btn say-btn" type="button">🔊 다시 듣기</button>${isCurrent ? '<button class="mini-btn skip-btn" type="button">⏭ 건너뛰기</button>' : ''}</div>`;
+    row.querySelector('.coach-target .say').onclick = () => tts.speakSeq([{ text: m.target, slow: true }]);
+    row.querySelector('.say-btn').onclick = () => speakCoach(m);
+    const skip = row.querySelector('.skip-btn');
+    if (skip) skip.onclick = skipRepeat;
+  } else if (m.role === 'user') {
+    row.innerHTML = `<div class="who">${escapeHtml(state.session.studentName || 'Me')}</div>
+      <div class="bubble">${highlightWords(m.text, m.usedWords)}</div>
+      <div class="fb"></div>`;
+    renderFeedback(row.querySelector('.fb'), m);
+  } else {
+    row.innerHTML = `<div class="who">🦒 EJ Teacher</div>
+      <div class="bubble">${escapeHtml(m.text)}</div>
+      <div class="bubble-tools"><button class="mini-btn say-btn" type="button">🔊 다시 듣기</button></div>`;
+    row.querySelector('.say-btn').onclick = () => tts.speak(m.text);
+  }
+  box.appendChild(row);
+  return row;
+}
+/** 학생 말풍선 아래 피드백 카드 (AI 말풍선·TTS와 완전히 분리) */
+function renderFeedback(el, m) {
+  const fb = m.feedback;
+  if (fb === undefined || fb === null) { el.innerHTML = m.pending ? '<span class="fb-pending">확인 중…</span>' : ''; return; }
+  if (fb.unavailable) { el.innerHTML = '<span class="fb-pending">피드백을 불러오지 못했어요</span>'; return; }
+  const cs = fb.corrections || [], bs = fb.better || [];
+  if (!cs.length && !bs.length) { el.innerHTML = '<span class="fb-perfect">👍 Perfect!</span>'; return; }
+  if (settings.feedbackStyle !== 'card') { el.innerHTML = ''; return; }   // 선생님 방식: 말풍선으로 고쳐줌
+
+  const TYPE = {
+    grammar: { tag: '❌ 문법' },
+    content: { tag: '📌 내용 오류' },
+    word_usage: { tag: '📝 단어 사용' },
+  };
+  const items = cs.map((c, i) => {
+    const t = TYPE[c.type] || TYPE.grammar;
+    const origLine = c.type === 'content'
+      ? `<div class="fb-orig plain">📌 ${escapeHtml(c.original)}</div>`
+      : `<div class="fb-orig">❌ ${escapeHtml(c.original)}</div>`;
+    return `<div class="fb-item"><div class="fb-tag">${t.tag}${c.grammar_point_ko && c.type !== 'content' ? ' · ' + escapeHtml(c.grammar_point_ko) : ''}</div>
+      ${origLine}
+      <div class="fb-fix"><span>✅ ${escapeHtml(c.corrected)}</span><button class="say" data-say="c${i}" type="button" aria-label="고친 문장 듣기">🔊</button></div>
+      <div class="fb-reason">${escapeHtml(c.reason_ko)}</div></div>`;
+  }).join('') + bs.map((b, i) => `<div class="fb-item"><div class="fb-tag">💡 더 자연스러운 표현</div>
+      <div class="fb-orig plain">${escapeHtml(b.original)}</div>
+      <div class="fb-fix"><span>💡 ${escapeHtml(b.better)}</span><button class="say" data-say="b${i}" type="button" aria-label="표현 듣기">🔊</button></div>
+      <div class="fb-reason">${escapeHtml(b.note_ko)}</div></div>`).join('');
+
+  const label = (cs.length ? `✏️ 고칠 점 ${cs.length}개` : '👍 Perfect!') + (bs.length ? ` · 💡 ${bs.length}` : '');
+  el.className = 'fb' + (settings.feedbackAlwaysOpen ? ' open' : '');
+  el.innerHTML = `<button class="fb-badge" type="button">${label} <span class="chev">▾</span></button><div class="fb-body">${items}</div>`;
+  el.querySelector('.fb-badge').onclick = () => el.classList.toggle('open');
+  el.querySelectorAll('[data-say]').forEach(btn => {
+    btn.onclick = () => {
+      const k = btn.dataset.say, i = +k.slice(1);
+      tts.speak(k[0] === 'c' ? cs[i].corrected : bs[i].better);
+    };
+  });
+}
+function renderAllMessages() {
+  $('messages').innerHTML = '';
+  if (!state.session) return;
+  state.session.messages.forEach(renderMessage);
+  scrollToBottom();
+}
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'row model';
+  row.id = 'typingRow';
+  row.innerHTML = '<div class="who">🦒 EJ Teacher</div><div class="bubble typing"><i></i><i></i><i></i></div><div class="typing-note"></div>';
+  $('messages').appendChild(row);
+  scrollToBottom();
+  // 기다리는 시간 표시 (5초 이후부터)
+  const started = Date.now();
+  clearInterval(state.typingTimer);
+  state.typingTimer = setInterval(() => {
+    const sec = Math.round((Date.now() - started) / 1000);
+    const note = row.querySelector('.typing-note');
+    if (note && sec >= 5 && !note.dataset.fixed) note.textContent = `생각하는 중… ${sec}초`;
+  }, 1000);
+}
+function setTypingNote(text) {
+  const note = ROOT.querySelector('#typingRow .typing-note');
+  if (note) { note.textContent = text; note.dataset.fixed = '1'; }
+}
+function hideTyping() { clearInterval(state.typingTimer); const t = $('typingRow'); if (t) t.remove(); }
+function scrollToBottom() { const b = $('messages'); requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; }); }
+function autosize() { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
+
+/* =========================================================
+   메시지 보내기 (한 턴)
+   ========================================================= */
+async function sendMessage() {
+  const input = $('input');
+  const text = input.value.replace(/\s+/g, ' ').trim();
+  if (!text || state.busy) return;
+  if (state.session && state.session.pending) { handleRepeat(text); return; }   // 따라 말하기 단계
+  if (!isConfigured()) { openSettings(); toast('먼저 API 키를 넣어 주세요 🔑'); return; }
+  const q = refreshLock();
+  if (!q.ok) { toast(quotaMessage(q)); return; }
+  if (recognizer.recording) recognizer.stop(false);
+  tts.stop();
+  hideNotice();
+
+  const s = state.session;
+  const msg = { id: uid(), role: 'user', text, ts: Date.now(), pending: true };
+  s.messages.push(msg);
+  const row = renderMessage(msg);
+  input.value = ''; autosize();
+  state.busy = true; updateComposer();
+  showTyping();
+
+  let result;
+  try { result = await askAI(); }
+  catch { result = { ok: false, error: '⚠️ 알 수 없는 오류가 났어요. 다시 보내 주세요.' }; }
+
+  hideTyping();
+  state.busy = false;
+  delete msg.pending;
+
+  if (!result.ok) {
+    // 실패한 문장은 대화에서 빼고 입력칸에 되돌려 놓기
+    s.messages = s.messages.filter(m => m !== msg);
+    row.remove();
+    if (!input.value.trim()) { input.value = text; autosize(); }
+    showNotice(result.error, 'error');
+    refreshLock();
+    return;
+  }
+
+  // ----- 피드백 (학생 말풍선 아래에만) -----
+  const ai = result.json;
+  let reply;
+  if (ai) {
+    reply = limitSentences(ai.reply);
+    msg.feedback = {
+      corrections: ai.corrections,
+      better: ai.better_expressions,
+      isPerfect: ai.is_perfect && ai.corrections.length === 0,
+    };
+  } else {
+    reply = limitSentences(salvageReply(result.text));
+    msg.feedback = { unavailable: true, corrections: [], better: [] };
+  }
+  if (!reply) reply = `Let's get back to our topic. What else can you tell me about "${s.topic}"?`;
+
+  // ----- 목표 단어 판정 -----
+  const used = judgeWordUsage(text, ai);
+  msg.usedWords = used;
+  const newly = [];
+  for (const [w, n] of Object.entries(used)) {
+    if (!s.wordCounts[w]) newly.push(w);
+    s.wordCounts[w] = (s.wordCounts[w] || 0) + n;
+  }
+  row.querySelector('.bubble').innerHTML = highlightWords(text, used);
+  renderFeedback(row.querySelector('.fb'), msg);
+  renderChips(Object.keys(used));
+  if (newly.length) toast(`✅ ${newly.join(', ')} 사용 성공!`);
+
+  // ----- 선생님 방식: 고칠 점이 있으면 먼저 고쳐주고 따라 말하기 → 끝나면 대화 이어가기 -----
+  const coach = settings.feedbackStyle !== 'card' ? pickCoaching(msg.feedback) : null;
+  if (coach) {
+    s.repeatStats = s.repeatStats || { asked: 0, success: 0 };
+    s.repeatStats.asked += 1;
+    s.pending = { target: coach.target, attempts: 0, reply, model: state.model || primaryModel(), coachId: null };
+    addCoachMessage(coachIntro(coach.kind), coach.target, 'Repeat after me! 🔁', coach.reason, []);
+  } else {
+    // ----- AI 대답 (대화만) -----
+    const aiMsg = { id: uid(), role: 'model', text: reply, ts: Date.now(), model: state.model || primaryModel() };
+    s.messages.push(aiMsg);
+    renderMessage(aiMsg);
+    scrollToBottom();
+    if (settings.autoTTS) tts.speak(reply);
+  }
+
+  // ----- 10개 모두 사용 축하 -----
+  if (!s.celebrated && s.words.length && s.words.every(w => s.wordCounts[w.word])) {
+    s.celebrated = true;
+    setTimeout(() => toast(`🎉 대단해요! 목표 단어 ${s.words.length}개를 모두 사용했어요! 🦒`, 'party', 4500), newly.length ? 1800 : 200);
+  }
+  saveCurrent();
+  refreshLock();
+}
+
+/* =========================================================
+   선생님처럼 고쳐주기 + 따라 말하기 (AI 요청 없이 앱 안에서 처리)
+   ========================================================= */
+const REPEAT_PASS = 0.75;   // 따라 말하기 통과 기준 (단어 일치율)
+const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
+function nameTag() { const n = state.session && state.session.studentName; return n ? ', ' + n : ''; }
+
+/** 고칠 점 중 가장 중요한 1개만 고름 (한 번에 하나씩) */
+function pickCoaching(fb) {
+  if (!fb || fb.unavailable) return null;
+  const cs = fb.corrections || [], bs = fb.better || [];
+  const c = cs.find(x => x.type !== 'content' && x.corrected) || cs.find(x => x.corrected);
+  if (c) return { kind: c.type === 'content' ? 'content' : 'fix', target: c.corrected, reason: c.reason_ko };
+  const b = bs.find(x => x.better);
+  if (b) return { kind: 'better', target: b.better, reason: b.note_ko };
+  return null;
+}
+function coachIntro(kind) {
+  const n = nameTag();
+  if (kind === 'content') return `Good try${n}! But actually, it's like this:`;
+  if (kind === 'better') return `${pickOne(["That's good", 'Nice sentence', 'Good job'])}${n}! 👍 But a native speaker would say:`;
+  return `${pickOne(['Good job', 'Nice try', 'Good thinking', 'Great effort'])}${n}! 👍 But it's better to say:`;
+}
+function addCoachMessage(intro, target, outro, reason, missing) {
+  const s = state.session;
+  const m = { id: uid(), role: 'model', kind: 'coach', intro, target, outro, reason: reason || '', missing: missing || [],
+    text: `${intro} "${target}" ${outro}`, ts: Date.now() };
+  s.pending.coachId = m.id;
+  ROOT.querySelectorAll('.skip-btn').forEach(b => b.remove());
+  s.messages.push(m);
+  renderMessage(m);
+  scrollToBottom();
+  if (settings.autoTTS) speakCoach(m);
+  updateComposer();
+}
+function speakCoach(m) {
+  tts.speakSeq([{ text: m.intro }, { text: m.target, slow: true }, { text: m.outro }]);
+}
+/** 비교용 단어 목록 (소문자, 문장부호 제거) */
+function wordTokens(t) {
+  return String(t || '').toLowerCase().replace(/[’‘`]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+}
+/** 두 문장의 단어 일치율 (0~1, 순서 고려) + 빠뜨린 단어 */
+function compareSentences(target, said) {
+  const a = wordTokens(target), b = wordTokens(said);
+  if (!a.length || !b.length) return { score: 0, missing: a };
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const matched = new Set();
+  for (let i = a.length, j = b.length; i > 0 && j > 0;) {
+    if (a[i - 1] === b[j - 1]) { matched.add(i - 1); i--; j--; }
+    else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--;
+  }
+  return { score: (2 * dp[a.length][b.length]) / (a.length + b.length), missing: a.filter((w, i) => !matched.has(i)) };
+}
+/** 빠뜨린 단어에 밑줄 */
+function markMissing(target, missing) {
+  const miss = new Set(missing || []);
+  return String(target).split(/(\s+)/).map(part => {
+    const w = wordTokens(part)[0];
+    return w && miss.has(w) ? `<u>${escapeHtml(part)}</u>` : escapeHtml(part);
+  }).join('');
+}
+function handleRepeat(text) {
+  const s = state.session, p = s.pending;
+  if (recognizer.recording) recognizer.stop(false);
+  tts.stop();
+  const um = { id: uid(), role: 'user', kind: 'repeat', text, ts: Date.now() };
+  s.messages.push(um);
+  renderMessage(um);
+  $('input').value = ''; autosize();
+  p.attempts += 1;
+  const { score, missing } = compareSentences(p.target, text);
+  if (score >= REPEAT_PASS) {
+    s.repeatStats.success += 1;
+    finishRepeat(`${pickOne(['Perfect', 'Excellent', 'Great job', 'Wonderful', 'Awesome'])}${nameTag()}! 👏`);
+  } else if (p.attempts < 2) {
+    addCoachMessage(`Almost${nameTag()}! Listen again and try once more:`, p.target, 'Your turn! 🎤', '밑줄 친 단어를 빠뜨렸어요. 천천히 다시 말해 봐요.', missing);
+  } else {
+    finishRepeat(`Good try${nameTag()}! We'll practice it again later. 😊`);
+  }
+  saveCurrent();
+}
+function skipRepeat() {
+  if (!state.session || !state.session.pending) return;
+  tts.stop();
+  finishRepeat(`Okay${nameTag()}! Let's keep going. 😊`);
+  saveCurrent();
+}
+/** 칭찬 한마디 → 원래 대화 질문으로 이어가기 */
+function finishRepeat(praise) {
+  const s = state.session, p = s.pending;
+  s.pending = null;
+  ROOT.querySelectorAll('.skip-btn').forEach(b => b.remove());
+  const pm = { id: uid(), role: 'model', kind: 'praise', text: praise, ts: Date.now() };
+  const am = { id: uid(), role: 'model', text: p.reply, ts: Date.now(), model: p.model };
+  s.messages.push(pm, am);
+  renderMessage(pm);
+  renderMessage(am);
+  scrollToBottom();
+  if (settings.autoTTS) tts.speakSeq([{ text: praise }, { text: p.reply }]);
+  updateComposer();
+}
+
+/* =========================================================
+   세션 종료 리포트
+   ========================================================= */
+function buildReport(s) {
+  const turns = userTurns(s);
+  const corrections = [];
+  const betters = [];
+  for (const m of turns) {
+    for (const c of (m.feedback && m.feedback.corrections) || []) corrections.push({ said: m.text, ...c });
+    for (const b of (m.feedback && m.feedback.better) || []) betters.push({ said: m.text, ...b });
+  }
+  const typeCount = {};
+  for (const c of corrections) {
+    if (c.type === 'content') continue;
+    const k = c.type === 'word_usage' && (!c.grammar_point_ko || c.grammar_point_ko === '기타') ? '단어 사용' : (c.grammar_point_ko || '기타');
+    typeCount[k] = (typeCount[k] || 0) + 1;
+  }
+  const top = Object.entries(typeCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([type, count]) => ({ type, count }));
+  const words = s.words.map(w => ({ word: w.word, meaning: w.meaning, count: s.wordCounts[w.word] || 0 }));
+  const end = Date.now();
+  return {
+    app: 'EJ English · Speaking',
+    id: s.id,
+    date: seoulDateTime(new Date(s.startedAt)),
+    endedAt: seoulDateTime(new Date(end)),
+    minutes: Math.max(1, Math.round((end - s.startedAt) / 60000)),
+    studentName: s.studentName,
+    grade: gradeKo(s.grade),
+    topic: s.topic,
+    totalTurns: turns.length,
+    targetWords: words,
+    wordsUsed: words.filter(w => w.count > 0).length,
+    wordsTotal: words.length,
+    repeatPractice: s.repeatStats || { asked: 0, success: 0 },
+    perfectSentences: turns.filter(m => m.feedback && !m.feedback.unavailable && !(m.feedback.corrections || []).length).length,
+    corrections: corrections.map(c => ({ original: c.original, corrected: c.corrected, reason_ko: c.reason_ko, type: c.type, grammar_point_ko: c.grammar_point_ko || '', studentSaid: c.said })),
+    betterExpressions: betters.map(b => ({ original: b.original, better: b.better, note_ko: b.note_ko })),
+    topGrammarTypes: top,
+    transcript: s.messages.map(m => ({ role: m.role === 'user' ? 'student' : 'ai', text: m.text })),
+  };
+}
+function reportToText(r) {
+  const L = [];
+  L.push('[EJ English · Speaking 리포트]');
+  L.push(`날짜: ${r.date} (${r.minutes}분)`);
+  L.push(`학생: ${r.studentName || '-'} (${r.grade})`);
+  L.push(`주제: ${r.topic}`);
+  L.push(`대화 턴 수: ${r.totalTurns}회 · 완벽한 문장: ${r.perfectSentences}개`);
+  if (r.repeatPractice && r.repeatPractice.asked) L.push(`따라 말하기: ${r.repeatPractice.success} / ${r.repeatPractice.asked} 성공`);
+  L.push(`목표 단어: ${r.wordsUsed} / ${r.wordsTotal}`);
+  for (const w of r.targetWords) L.push(`  ${w.count ? '✅' : '⬜'} ${w.word}${w.meaning ? ' (' + w.meaning + ')' : ''}${w.count ? ' ' + w.count + '회' : ''}`);
+  L.push('');
+  L.push('고친 문장:');
+  if (!r.corrections.length) L.push('  없음 👍');
+  r.corrections.forEach((c, i) => L.push(`  ${i + 1}. ${c.original} → ${c.corrected}  (${c.reason_ko})`));
+  if (r.betterExpressions.length) {
+    L.push('');
+    L.push('더 자연스러운 표현:');
+    r.betterExpressions.forEach((b, i) => L.push(`  ${i + 1}. ${b.original} → ${b.better}  (${b.note_ko})`));
+  }
+  L.push('');
+  L.push('자주 틀린 문법 유형 TOP 3:');
+  if (!r.topGrammarTypes.length) L.push('  없음 👍');
+  r.topGrammarTypes.forEach((t, i) => L.push(`  ${i + 1}. ${t.type} (${t.count}회)`));
+  return L.join('\n');
+}
+function endSession() {
+  const s = state.session;
+  if (!s || state.busy) return;
+  if (!userTurns(s).length) { toast('아직 대화가 없어요. 먼저 한 문장 말해 볼까요?'); return; }
+  if (!confirm('대화를 끝내고 리포트를 볼까요?')) return;
+  recognizer.stop(false);
+  tts.stop();
+  const report = buildReport(s);
+  const all = loadJSON(LS.sessions, []);
+  all.push(report);
+  while (all.length > CONFIG.MAX_SAVED_SESSIONS) all.shift();
+  saveJSON(LS.sessions, all);
+  try { localStorage.removeItem(curKey()); } catch {}
+  state.session = null;
+  showReport(report);
+}
+function showReport(r) {
+  const words = r.targetWords.map(w =>
+    `<span class="chip ${w.count ? 'used' : ''}">${w.count ? '✅' : '⬜'}<b>${escapeHtml(w.word)}</b>${w.meaning ? `<small>${escapeHtml(w.meaning)}</small>` : ''}${w.count ? `<span class="cnt">×${w.count}</span>` : ''}</span>`).join('');
+  const corr = r.corrections.length
+    ? `<ol class="r-list">${r.corrections.map(c => `<li><span class="o">${escapeHtml(c.original)}</span> → <span class="c">${escapeHtml(c.corrected)}</span><span class="why">${escapeHtml(c.reason_ko)}</span></li>`).join('')}</ol>`
+    : '<p class="empty">고친 문장이 없어요. 완벽해요! 👍</p>';
+  const better = r.betterExpressions.length
+    ? `<div class="card"><h3>💡 더 자연스러운 표현</h3><ol class="r-list">${r.betterExpressions.map(b => `<li>${escapeHtml(b.original)} → <span class="c">${escapeHtml(b.better)}</span><span class="why">${escapeHtml(b.note_ko)}</span></li>`).join('')}</ol></div>` : '';
+  const top = r.topGrammarTypes.length
+    ? `<ol class="r-list">${r.topGrammarTypes.map(t => `<li><b>${escapeHtml(t.type)}</b> — ${t.count}회</li>`).join('')}</ol>`
+    : '<p class="empty">자주 틀린 유형이 없어요 👍</p>';
+  $('reportBody').innerHTML = `
+    <div class="card meta">
+      <div>📅 <b>${escapeHtml(r.date)}</b> (${r.minutes}분)</div>
+      <div>🙋 ${escapeHtml(r.studentName || '-')} (${escapeHtml(r.grade)})</div>
+      <div>💬 주제: <b>${escapeHtml(r.topic)}</b></div>
+      ${r.repeatPractice && r.repeatPractice.asked ? `<div>🔁 따라 말하기: <b>${r.repeatPractice.success} / ${r.repeatPractice.asked}</b> 성공</div>` : ''}
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><b>${r.totalTurns}</b><span>대화 턴</span></div>
+      <div class="stat"><b>${r.wordsUsed}/${r.wordsTotal}</b><span>목표 단어</span></div>
+      <div class="stat"><b>${r.perfectSentences}</b><span>완벽한 문장</span></div>
+    </div>
+    ${r.wordsTotal ? `<div class="card"><h3>🎯 목표 단어 사용 현황 (${r.wordsUsed} / ${r.wordsTotal})</h3><div class="r-words">${words}</div></div>` : ''}
+    <div class="card"><h3>✏️ 수정 받은 문장 (${r.corrections.length})</h3>${corr}</div>
+    ${better}
+    <div class="card"><h3>📊 자주 틀린 문법 유형 TOP 3</h3>${top}</div>
+    <div class="actions">
+      <button class="btn light" id="rExport" type="button">⬇️ JSON 내보내기</button>
+      <button class="btn light" id="rCopy" type="button">📋 텍스트 복사</button>
+    </div>
+    ${ASSIGN && ASSIGN.onSubmit ? '<button class="btn big" id="rSubmit" type="button">📤 선생님께 제출하기</button>' : ''}
+    <p class="meta" id="rMsg" style="margin:0;text-align:center"></p>
+    <button class="btn big ghost" id="rNew" type="button">${ASSIGN && ASSIGN.onSubmit ? '제출하지 않고 나가기' : '닫기'}</button>`;
+  $('rExport').onclick = () => downloadJSON([r], `EJ_speaking_${(r.studentName || 'student').replace(/[^\w가-힣-]/g, '')}_${r.date.slice(0, 10)}.json`);
+  $('rCopy').onclick = () => copyText(reportToText(r));
+  $('rNew').onclick = () => {
+    if (ASSIGN && ASSIGN.onSubmit && !r.submitted && !confirm('제출하지 않고 나갈까요? (기록은 이 기기에 남아요)')) return;
+    closeWidget();
+  };
+  const sb = $('rSubmit');
+  if (sb) sb.onclick = async () => {
+    sb.disabled = true; sb.textContent = '제출하는 중…'; $('rMsg').textContent = '';
+    try {
+      await ASSIGN.onSubmit(r);
+      r.submitted = true;
+      sb.textContent = '✅ 제출했어요!';
+      $('rNew').textContent = '숙제 화면으로 돌아가기';
+      toast('선생님께 제출했어요! 수고했어요 🎉', 'party', 3000);
+    } catch (e) {
+      sb.disabled = false; sb.textContent = '📤 다시 제출하기';
+      $('rMsg').textContent = '제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.';
+    }
+  };
+  $('reportScreen').classList.remove('hidden');
+  $('reportScreen').querySelector('.panel').scrollTop = 0;
+}
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('파일을 저장했어요 ⬇️');
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('복사했어요! 카톡이나 메모에 붙여넣으세요 📋'); return; } catch {}
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); toast('복사했어요 📋'); } catch { toast('복사에 실패했어요'); }
+  ta.remove();
+}
+
+/* =========================================================
+   세션 시작 / 복원
+   ========================================================= */
+function startNewSession(speakOpening = false) {
+  state.session = newSession();
+  state.model = null;
+  saveCurrent();
+  renderHeader();
+  renderAllMessages();
+  refreshLock();
+  if (speakOpening && settings.autoTTS) tts.speak(state.session.messages[0].text);
+}
+function restoreOrStart() {
+  const cur = loadJSON(curKey(), null);
+  if (cur && cur.topic === ASSIGN.topic && Array.isArray(cur.messages)) {
+    state.session = cur;
+    // 설정에서 단어 뜻만 바뀐 경우 반영
+    const fresh = targetWords();
+    if (fresh.length === cur.words.length && fresh.every((w, i) => w.word === cur.words[i].word)) cur.words = fresh;
+    renderHeader();
+    renderAllMessages();
+    refreshLock();
+  } else {
+    startNewSession(false);
+  }
+}
+
+/* =========================================================
+   설정 화면
+   ========================================================= */
+function topicsFromText() {
+  return [...new Set($('sTopics').value.split(/\r?\n/).map(t => t.trim()).filter(Boolean))];
+}
+function fillTopicSelect(selected) {
+  const topics = topicsFromText();
+  $('sTopic').innerHTML = topics.length
+    ? topics.map(t => `<option ${t === selected ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')
+    : '<option value="">(위에 주제를 먼저 입력하세요)</option>';
+}
+function updateWordPreview() {
+  const all = parseWords($('sWords').value);
+  const el = $('sWordsPreview');
+  if (!all.length) { el.innerHTML = '예) <b>season - 계절</b> 처럼 한 줄에 하나씩 입력하세요.'; return; }
+  const list = all.slice(0, CONFIG.MAX_TARGET_WORDS).map(w => `<b>${escapeHtml(w.word)}</b>${w.meaning ? '(' + escapeHtml(w.meaning) + ')' : ''}`).join(', ');
+  el.innerHTML = `인식된 단어 ${Math.min(all.length, CONFIG.MAX_TARGET_WORDS)}개: ${list}` +
+    (all.length > CONFIG.MAX_TARGET_WORDS ? ` <span class="err">· ${all.length}개 중 앞 ${CONFIG.MAX_TARGET_WORDS}개만 사용해요</span>` : '') +
+    (all.length < CONFIG.MAX_TARGET_WORDS ? ` <span class="err">· ${CONFIG.MAX_TARGET_WORDS - all.length}개 더 넣을 수 있어요</span>` : '');
+}
+function updateHistoryInfo() {
+  const all = loadJSON(LS.sessions, []);
+  $('sHistoryInfo').textContent = all.length
+    ? `이 기기에 ${all.length}개의 대화 기록이 있어요. (마지막: ${all[all.length - 1].date} · ${all[all.length - 1].topic})`
+    : '아직 저장된 대화 기록이 없어요.';
+  const u = getUsage();
+  $('sUsageInfo').textContent = `오늘 ${u.count}회 사용${u.stopped ? ' · 사용 중지 상태' : ''}.`;
+}
+function openSettings() {
+  recognizer.stop(false);
+  $('sApiKey').value = getApiKey();
+  $('sApiKey').type = 'password'; $('sKeyShow').textContent = '보기';
+  $('sKeyResult').textContent = ''; $('sKeyResult').className = 'test-result';
+  $('sName').value = settings.engName || '';
+  $('sAutoTTS').checked = settings.autoTTS;
+  $('sFbOpen').checked = settings.feedbackAlwaysOpen;
+  ROOT.querySelectorAll('input[name=sFbStyle]').forEach(r => { r.checked = r.value === (settings.feedbackStyle || 'teacher'); });
+  $('sMicAutoSend').checked = settings.micAutoSend;
+  $('sRpm').value = settings.rpm;
+  $('sRpd').value = settings.rpd;
+  $('sModelPrimary').value = settings.modelPrimary; $('sModelPrimary').placeholder = CONFIG.MODEL_PRIMARY;
+  $('sModelFallback').value = settings.modelFallback; $('sModelFallback').placeholder = CONFIG.MODEL_FALLBACK;
+  updateHistoryInfo();
+  $('settingsScreen').classList.remove('hidden');
+}
+function closeSettings() { $('settingsScreen').classList.add('hidden'); }
+function updateHistoryInfo() {
+  const all = loadJSON(LS.sessions, []);
+  $('sHistoryInfo').textContent = all.length
+    ? `이 기기에 ${all.length}개의 대화 기록이 있어요. (마지막: ${all[all.length - 1].date} · ${all[all.length - 1].topic})`
+    : '아직 저장된 대화 기록이 없어요.';
+  const u = getUsage();
+  $('sUsageInfo').textContent = `오늘 ${u.count}회 사용${u.stopped ? ' · 사용 중지 상태' : ''}.`;
+}
+function saveSettingsFromForm() {
+  const key = $('sApiKey').value.trim();
+  if (!key && !EJ_DEBUG.mock) { toast('API 키를 입력해 주세요 🔑'); $('sApiKey').focus(); return; }
+  setApiKey(key);
+  const engName = $('sName').value.trim();
+  const nameChanged = engName !== (settings.engName || '');
+  Object.assign(settings, {
+    engName,
+    autoTTS: $('sAutoTTS').checked,
+    feedbackAlwaysOpen: $('sFbOpen').checked,
+    feedbackStyle: (ROOT.querySelector('input[name=sFbStyle]:checked') || {}).value || 'teacher',
+    micAutoSend: $('sMicAutoSend').checked,
+    rpm: Math.min(60, Math.max(1, parseInt($('sRpm').value, 10) || CONFIG.DEFAULT_RPM)),
+    rpd: Math.min(5000, Math.max(1, parseInt($('sRpd').value, 10) || CONFIG.DEFAULT_RPD)),
+    modelPrimary: $('sModelPrimary').value.trim(),
+    modelFallback: $('sModelFallback').value.trim(),
+  });
+  saveSettings();
+  closeSettings();
+  hideNotice();
+  if (nameChanged && ASSIGN) {
+    ASSIGN.name = engName || ASSIGN.baseName || '';
+    if (state.session && !userTurns().length) { startNewSession(false); toast('저장했어요 ✅'); return; }
+    if (state.session) state.session.studentName = ASSIGN.name;
+  }
+  renderHeader();
+  renderAllMessages();
+  refreshLock();
+  toast('저장했어요 ✅');
+}
+
+/** 키 테스트: 아주 짧은 요청 1회 (사용량에 포함) */
+async function testKey() {
+  const key = $('sApiKey').value.trim();
+  const out = $('sKeyResult');
+  if (!key) { out.className = 'test-result bad'; out.textContent = '키를 먼저 입력하세요.'; return; }
+  const q = checkQuota();
+  if (!q.ok) { out.className = 'test-result bad'; out.textContent = quotaMessage(q); return; }
+  const prevKey = getApiKey();
+  setApiKey(key);   // 테스트용으로 잠시 저장 (실패하면 되돌림)
+  out.className = 'test-result'; out.textContent = '확인 중…';
+  $('sKeyTest').disabled = true;
+  const model = $('sModelPrimary').value.trim() || CONFIG.MODEL_PRIMARY;
+  const r = await geminiRequest(model, {
+    contents: [{ role: 'user', parts: [{ text: 'Reply with the single word: OK' }] }],
+    generationConfig: { temperature: 0 },
+  });
+  $('sKeyTest').disabled = false;
+  if (r.ok) {
+    out.className = 'test-result ok';
+    out.textContent = `✅ 키가 정상이에요! (모델: ${model})`;
+  } else {
+    if (!prevKey) setApiKey(''); else setApiKey(prevKey);
+    out.className = 'test-result bad';
+    out.textContent = r.status === 429 ? '🛑 키는 맞지만 지금은 한도 초과예요. 잠시 후 다시 해 보세요.' : errorMessage(r);
+  }
+  updateHistoryInfo();
+}
+
+/* =========================================================
+   이벤트 연결
+   ========================================================= */
+function bindEvents() {
+  $('sendBtn').onclick = sendMessage;
+  $('input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMessage(); }
+  });
+  $('input').addEventListener('input', autosize);
+  $('micBtn').onclick = () => {
+    if (recognizer.recording) recognizer.stop(settings.micAutoSend);
+    else {
+      const q = checkQuota();
+      if (!q.ok && !(state.session && state.session.pending)) { toast(quotaMessage(q)); return; }
+      recognizer.start();
+    }
+  };
+  $('ttsToggle').onclick = () => {
+    settings.autoTTS = !settings.autoTTS; saveSettings();
+    if (!settings.autoTTS) tts.stop();
+    renderHeader();
+    toast(settings.autoTTS ? '🔊 AI 목소리 켜짐' : '🔇 AI 목소리 꺼짐');
+  };
+  $('settingsBtn').onclick = openSettings;
+  $('settingsClose').onclick = closeSettings;
+  $('closeBtn').onclick = () => {
+    if (state.busy) return;
+    closeWidget();
+  };
+  $('settingsSave').onclick = saveSettingsFromForm;
+  $('endBtn').onclick = endSession;
+
+  $('sKeyShow').onclick = () => {
+    const i = $('sApiKey'); const show = i.type === 'password';
+    i.type = show ? 'text' : 'password';
+    $('sKeyShow').textContent = show ? '숨기기' : '보기';
+  };
+  $('sKeyTest').onclick = testKey;
+  $('sUnstop').onclick = () => {
+    const u = getUsage(); u.stopped = false; saveUsage(u);
+    state.model = null;
+    refreshLock(); updateHistoryInfo();
+    toast('사용 중지를 해제했어요');
+  };
+  $('sExportAll').onclick = () => {
+    const all = loadJSON(LS.sessions, []);
+    if (!all.length) { toast('저장된 기록이 없어요'); return; }
+    downloadJSON(all, `EJ_speaking_all_${seoulDate()}.json`);
+  };
+  $('sClearHistory').onclick = () => {
+    if (!confirm('이 기기에 저장된 대화 기록을 모두 지울까요? (되돌릴 수 없어요)')) return;
+    saveJSON(LS.sessions, []); updateHistoryInfo(); toast('기록을 지웠어요');
+  };
+  // 자정이 지나면 사용량 표시/잠금 갱신
+  setInterval(refreshLock, 60000);
+}
+
+/* =========================================================
+   시작
+   ========================================================= */
+let mounted = false;
+function mount() {
+  HOST = document.createElement('div');
+  HOST.id = 'ej-speak-host';
+  HOST.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:none';
+  ROOT = HOST.attachShadow({ mode: 'open' });
+  ROOT.innerHTML = '<style>' + WIDGET_CSS + '</style>' + WIDGET_HTML;
+  document.body.appendChild(HOST);
+  // 위젯 안의 키보드·클릭이 뒤쪽 단어 앱으로 새어 나가지 않게 막음
+  ['keydown', 'keyup', 'keypress', 'input', 'change', 'paste', 'click', 'pointerdown', 'pointerup', 'drop', 'dragover']
+    .forEach(t => HOST.addEventListener(t, e => e.stopPropagation()));
+  bindEvents();
+  if (!SR) $('micBtn').classList.add('hidden');
+  mounted = true;
+}
+let prevOverflow = '';
+function closeWidget() {
+  recognizer.stop(false);
+  tts.stop();
+  clearTimeout(state.lockTimer);
+  $('reportScreen').classList.add('hidden');
+  $('settingsScreen').classList.add('hidden');
+  HOST.style.display = 'none';
+  document.body.style.overflow = prevOverflow;
+  const cb = ASSIGN && ASSIGN.onClose;
+  state.session = null;
+  ASSIGN = null;
+  if (cb) try { cb(); } catch {}
+}
+/**
+ * 스피킹 열기
+ * opts = { hwId, topic, words:[{word, meaning}], level:'elementary'|'middle', name,
+ *          onSubmit: async (report) => {...}  // 없으면 제출 버튼 없음 (원장 미리보기)
+ *          onClose: () => {} }
+ */
+function open(opts) {
+  if (!mounted) mount();
+  ASSIGN = Object.assign({ words: [], level: 'elementary', name: '' }, opts || {});
+  ASSIGN.topic = String(ASSIGN.topic || '').trim() || 'Free talk';
+  settings = Object.assign({}, DEFAULT_SETTINGS, loadJSON(LS.settings, {}));
+  ASSIGN.baseName = ASSIGN.name;
+  if (settings.engName) ASSIGN.name = settings.engName;   // 영어 이름이 있으면 그 이름으로 불러 줌
+  prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  HOST.style.display = 'block';
+  hideNotice();
+  $('reportScreen').classList.add('hidden');
+  if (!SR) showNotice('이 브라우저는 음성 인식을 지원하지 않아요. 글자로 입력해 주세요. (Chrome / Edge 권장)', 'warn');
+  restoreOrStart();
+  if (!isConfigured()) { openSettings(); toast('처음 한 번만 Gemini API 키를 넣어 주세요 🔑', '', 3500); }
+}
+window.EJSpeak = { open, close: () => mounted && HOST.style.display !== 'none' && closeWidget(), parseWords };
+
+})();
+</script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -570,6 +2019,7 @@ async function addPhotos(files){
 }
 function ensurePhotos(sub){
   if(!S.pc)S.pc={};
+  if(sub&&sub.speak){S.pc[sub.id]=[];return}
   if(S.pc[sub.id]!==undefined)return;
   S.pc[sub.id]=null;
   (async()=>{
@@ -601,14 +2051,16 @@ async function submitHw(){
 }
 async function createHw(){
   const f=S.f;S.cmsg='';
-  const title=(f.title||'').trim();
+  const sk=f.kind==='speak',spw=sk&&window.EJSpeak?window.EJSpeak.parseWords(f.spwords||'').slice(0,10):[];
+  if(sk&&!(f.sptopic||'').trim()){S.cmsg='스피킹 대화 주제를 입력해 주세요.';render();return}
+  const title=(f.title||'').trim()||(sk?'스피킹: '+(f.sptopic||'').trim():'');
   if(!title||!f.date){S.cmsg='숙제 제목과 마감 날짜를 입력해 주세요.';render();return}
   if(f.tmode==='pick'&&!(f.picks||[]).length){S.cmsg='숙제를 받을 학생을 선택해 주세요.';render();return}
   const open=f.odate?f.odate+'T'+(f.otime||'00:00'):'',due=f.date+'T'+(f.time||'20:00');
   if(open&&open>=due){S.cmsg='오픈 시각이 마감 시각보다 늦어요. 날짜를 다시 확인해 주세요.';render();return}
   try{
-    await setDoc(doc(fdb,'homework','h'+Date.now()),{title,desc:(f.desc||'').trim(),due,open,folder:(f.folder&&f.folder!=='gen')?f.folder:'',lock:f.lock!==false,target:f.tmode==='pick'?f.picks.slice():'all',created:new Date().toISOString()});
-    S.f={tmode:'all',picks:[],time:f.time||'20:00',otime:f.otime||'',folder:f.folder||'gen',lock:f.lock!==false};S.cmsg='숙제를 올렸어요.';
+    await setDoc(doc(fdb,'homework','h'+Date.now()),Object.assign({title,desc:(f.desc||'').trim(),due,open,folder:(f.folder&&f.folder!=='gen')?f.folder:'',lock:f.lock!==false,target:f.tmode==='pick'?f.picks.slice():'all',created:new Date().toISOString()},sk?{kind:'speak',topic:(f.sptopic||'').trim(),words:spw,level:f.splevel==='middle'?'middle':'elementary'}:{}));
+    S.f={tmode:'all',picks:[],time:f.time||'20:00',otime:f.otime||'',folder:f.folder||'gen',lock:f.lock!==false,kind:f.kind||'photo',splevel:f.splevel||'elementary'};S.cmsg='숙제를 올렸어요.';
   }catch(e){S.cmsg='숙제를 올리지 못했어요. Firestore 보안 규칙을 새 버전으로 바꿨는지 확인해 주세요.'}
   render();
 }
@@ -1054,6 +2506,50 @@ const msgBox=(ok)=>S.cmsg?'<p class="fb '+(ok.test(S.cmsg)?'ok':'bad')+'" role="
 function thumbs(arr,rm,big,dl){
   return arr.length?'<div class="thumbs'+(big?' big':'')+'">'+arr.map((p,i)=>'<div class="th"><img src="'+p+'" alt="숙제 사진 '+(i+1)+'">'+(rm?'<button class="x" data-act="hwrm" data-v="'+i+'" aria-label="사진 지우기">×</button>':'')+(dl?'<a class="dl" href="'+p+'" download="homework_'+(i+1)+'.jpg">다운로드</a>':'')+'</div>').join('')+'</div>':'';
 }
+/* ---------- 🎤 스피킹 숙제 (EJ Speaking 위젯 연결) ---------- */
+const hwIcon=h=>(h.kind==='speak'?'🎤 ':'')+(h.folder?'📖 ':'');
+const SPLV={elementary:'초등',middle:'중등'};
+function spkWordsHtml(ws){return (ws||[]).length?'<div class="spk-words">'+ws.map(w=>'<span class="pill '+(w.count?'p-ok':'p-lr')+'">'+(w.count?'✅ ':'')+esc(w.word)+(w.meaning?' <small>'+esc(w.meaning)+'</small>':'')+(w.count?' ×'+w.count:'')+'</span>').join('')+'</div>':''}
+/* 학생이 제출한 스피킹 결과 보기 */
+function spkHtml(r,id,teacher){
+  const sp=r||{},rp=sp.repeatPractice||{};
+  const corr=(sp.corrections||[]).length?'<ol class="spk-list">'+sp.corrections.map(c=>'<li><s>'+esc(c.original)+'</s> → <b class="spk-ok">'+esc(c.corrected)+'</b><br><span class="meta">'+esc(c.reason_ko||'')+'</span></li>').join('')+'</ol>':'<p class="meta">고친 문장이 없어요. 완벽해요! 👍</p>';
+  const top=(sp.topGrammarTypes||[]).length?'<p class="meta" style="margin:0">자주 틀린 유형: '+sp.topGrammarTypes.map((t,i)=>(i+1)+'. '+esc(t.type)+' ('+t.count+'회)').join(' · ')+'</p>':'';
+  const tr=(sp.transcript||[]).length?'<details class="spk-tr"><summary>대화 전체 보기</summary>'+sp.transcript.map(m=>'<p class="'+(m.role==='student'?'spk-me':'spk-ai')+'"><b>'+(m.role==='student'?'학생':'AI')+'</b> '+esc(m.text)+'</p>').join('')+'</details>':'';
+  return '<div class="card spk-card" style="cursor:default;min-height:0;align-items:stretch;gap:6px">'
+   +'<b>🎤 스피킹 결과</b><p class="meta" style="margin:0">주제: '+esc(sp.topic||'')+' · '+esc(sp.date||'')+' ('+(sp.minutes||1)+'분)</p>'
+   +'<div class="spk-stats"><span><b>'+(sp.totalTurns||0)+'</b>대화 턴</span><span><b>'+(sp.wordsUsed||0)+'/'+(sp.wordsTotal||0)+'</b>목표 단어</span><span><b>'+(sp.perfectSentences||0)+'</b>완벽한 문장</span>'+(rp.asked?'<span><b>'+rp.success+'/'+rp.asked+'</b>따라 말하기</span>':'')+'</div>'
+   +spkWordsHtml(sp.targetWords)
+   +'<b style="margin-top:4px">✏️ 고친 문장 ('+(sp.corrections||[]).length+')</b>'+corr+top+tr
+   +(teacher?'<div class="acts"><button class="btn" data-act="spkcopy" data-v="'+id+'">📋 학부모용 텍스트 복사</button></div>':'')+'</div>';
+}
+function spkText(sp,name){
+  const L=['[EJ English 스피킹 리포트]',(name||'')+' 학생 · '+(sp.date||''),'주제: '+(sp.topic||''),'대화 '+(sp.totalTurns||0)+'턴 · 완벽한 문장 '+(sp.perfectSentences||0)+'개'+((sp.repeatPractice||{}).asked?' · 따라 말하기 '+sp.repeatPractice.success+'/'+sp.repeatPractice.asked+' 성공':'')];
+  L.push('목표 단어 '+(sp.wordsUsed||0)+' / '+(sp.wordsTotal||0)+((sp.targetWords||[]).some(w=>w.count)?' ('+sp.targetWords.filter(w=>w.count).map(w=>w.word).join(', ')+')':''));
+  if((sp.corrections||[]).length){L.push('','고친 문장:');sp.corrections.forEach((c,i)=>L.push((i+1)+'. '+c.original+' → '+c.corrected+(c.reason_ko?' ('+c.reason_ko+')':'')))}
+  if((sp.topGrammarTypes||[]).length)L.push('','자주 틀린 유형: '+sp.topGrammarTypes.map(t=>t.type+' '+t.count+'회').join(', '));
+  return L.join('\n');
+}
+/* 학생 숙제 화면의 '스피킹 시작' 카드 */
+function spkZone(h,rs){
+  const ok=typeof window.EJSpeak!=='undefined';
+  return '<div class="authbox"><b>💬 주제: '+esc(h.topic||'')+'</b><p class="meta" style="margin:0">수준: '+(SPLV[h.level]||'초등')+' · 선생님 AI와 영어로 대화하고, 목표 단어를 써 보세요!</p>'
+   +spkWordsHtml((h.words||[]).map(w=>({word:w.word,meaning:w.meaning})))
+   +'<div class="acts"><button class="btn main" data-act="spkgo" data-v="'+h.id+'"'+(ok?'':' disabled')+'>🎤 '+(rs.length?'다시 연습하고 추가 제출하기':'스피킹 시작')+'</button></div>'
+   +'<p class="meta" style="margin:0">Chrome·Edge 브라우저와 마이크가 필요해요. 대화를 끝내면 리포트가 나오고, <b>선생님께 제출하기</b>를 누르면 제출돼요.</p></div>';
+}
+function spkOpen(h,preview){
+  if(!window.EJSpeak||!h)return;
+  const me=S.user&&S.user.role==='student'?stu(S.user.id):null;
+  window.EJSpeak.open({hwId:(preview?'preview_':'')+h.id,topic:h.topic,words:h.words||[],level:h.level||'elementary',name:me?me.name:'',
+    onSubmit:preview?null:async rep=>{
+      const sp=JSON.parse(JSON.stringify(rep));
+      sp.transcript=(sp.transcript||[]).slice(-80).map(m=>({role:m.role,text:String(m.text||'').slice(0,400)}));
+      await saveSub(h.id+'.'+Date.now().toString(36),h.id,S.user.uid,me?me.name:'',[],'',{speak:sp});
+    },
+    onClose:()=>render()});
+}
+
 /* 폴더: 'gen' = 모든 학생, 'rx' = 원장이 열어 준 학생만 */
 const HF=[['gen','일반','📷'],['rx','Reading Explorer','📖']];
 const hfOn=(s,k)=>k==='gen'||hasFolder(s,k);
@@ -1079,7 +2575,7 @@ function hwStudent(){
   return dataWarn()+'<h2>숙제 제출</h2>'
    +(fl.length?'<div class="tabs">'+[['all','전체']].concat([['gen','일반']],fl.map(f=>[f[0],f[2]+' '+f[1]])).map(f=>'<button data-act="hwfsel" data-v="'+f[0]+'" aria-selected="'+(ft===f[0])+'">'+f[1]+'</button>').join('')+'</div>':'')
    +'<div class="tabs">'+[['all','전체'],['need','제출 필요'],['sub','제출 완료'],['redo','재제출 요청']].map(f=>'<button data-act="hwssel" data-v="'+f[0]+'" aria-selected="'+(fs===f[0])+'">'+f[1]+' '+cnt(f[0])+'</button>').join('')+'</div>'
-   +(list.length?'<div class="units">'+list.map(h=>'<button class="unit" data-act="hwopen" data-v="'+h.id+'"><div class="row"><b>'+(h.folder?'📖 ':'')+esc(h.title)+'</b>'+hwPill(h,uid)+'</div><div class="meta">'+hwWin(h)+'</div></button>').join('')+'</div>':'<p class="meta">'+(all.length?'이 조건에 맞는 숙제가 없어요.':'선생님이 올린 숙제는 아직 없어요.')+'</p>')
+   +(list.length?'<div class="units">'+list.map(h=>'<button class="unit" data-act="hwopen" data-v="'+h.id+'"><div class="row"><b>'+hwIcon(h)+esc(h.title)+'</b>'+hwPill(h,uid)+'</div><div class="meta">'+hwWin(h)+'</div></button>').join('')+'</div>':'<p class="meta">'+(all.length?'이 조건에 맞는 숙제가 없어요.':'선생님이 올린 숙제는 아직 없어요.')+'</p>')
    +own+hist;
 }
 function hwStudentDetail(h){
@@ -1096,12 +2592,12 @@ function hwStudentDetail(h){
     return '<div class="hwrow"><div class="row"><b>제출 '+n+'회</b><span class="meta">제출일 '+fmtDt(r.at)+'</span></div>'
      +(fb&&fb.score!=null&&fb.score!==''?'<div class="row"><span class="meta">점수</span><b class="mono">'+fb.score+' / 100점</b></div>':'')
      +(r.note?'<p class="meta">내가 남긴 말: “'+esc(r.note)+'”</p>':'')
-     +(S.pc[r.id]?thumbs(S.pc[r.id],false,true):'<p class="meta">사진 불러오는 중…</p>')
+     +(r.speak?spkHtml(r.speak,r.id,false):S.pc[r.id]?thumbs(S.pc[r.id],false,true):'<p class="meta">사진 불러오는 중…</p>')
      +(fb?'<div class="card" style="cursor:default;min-height:0;align-items:stretch;gap:4px"><b>선생님 피드백 '+(fb.status==='redo'?'<span class="pill p-re">재제출 요청</span>':'<span class="pill p-ok">확인 완료</span>')+'</b><p style="margin:0;white-space:pre-wrap;text-align:left">'+esc(fb.text||(fb.status==='ok'?'잘했어요!':''))+'</p></div>':'')+'</div>'}).join('');
-  return '<button class="btn link" data-act="hwclose" style="align-self:flex-start">← 숙제 목록</button><h2>'+(h.folder?'📖 ':'')+esc(h.title)+'</h2>'
+  return '<button class="btn link" data-act="hwclose" style="align-self:flex-start">← 숙제 목록</button><h2>'+hwIcon(h)+esc(h.title)+'</h2>'
    +'<div class="row">'+hwPill(h,uid)+'<span class="meta">'+hwWin(h)+'</span></div>'
    +(h.desc?'<div class="card" style="cursor:default;min-height:0;align-items:stretch;gap:4px"><b>안내</b><p class="hwdesc" style="margin:0;white-space:pre-wrap;text-align:left">'+esc(h.desc)+'</p></div>':'')
-   +HWTIPS+zone
+   +(h.kind==='speak'?'':HWTIPS)+(h.kind==='speak'&&st.can?spkZone(h,rs):zone)
    +'<h2>제출 내역</h2>'+(rs.length?'<p class="meta">총 '+rs.length+'회 제출 · 사진은 계속 피드백을 주고받으며 누적돼요.</p>'+hist:'<p class="meta">아직 제출하지 않았어요.</p>');
 }
 function ownForm(me){
@@ -1152,7 +2648,13 @@ function hwTeacher(){
   const f=S.f,pick=f.tmode==='pick',fo=f.folder||'gen';
   const pend=pendingSubs();
   const inbox='<h2>✅ 확인 대기 '+pend.length+'건</h2>'+(pend.length?'<div class="log">'+pend.slice(0,15).map(x=>{const h=HW.find(y=>y.id===(x.base||x.hw)),n=roundsOf(h.id,x.uid).findIndex(r=>r.id===x.id)+1;return '<div><b>'+esc(x.name||'')+'</b><span class="meta">'+esc(h.title)+' · '+n+'회 · '+fmtDt(x.at)+'</span><button class="btn main" data-act="hwcheck" data-v="'+h.id+'|'+x.id+'">확인하기</button></div>'}).join('')+'</div>':'<p class="meta">새로 올라온 숙제가 없어요.</p>');
+  const sk=f.kind==='speak';
   const form='<div class="authbox"><h2>새 숙제 올리기</h2>'
+   +'<div class="label">숙제 종류</div><div class="tabs"><button data-act="hwkind" data-v="photo" aria-selected="'+!sk+'">📷 사진 숙제</button><button data-act="hwkind" data-v="speak" aria-selected="'+sk+'">🎤 스피킹 숙제</button></div>'
+   +(sk?'<div class="spk-form"><label class="fld"><span class="label">💬 대화 주제 (영어)</span><input type="text" id="hw_sptopic" data-bind="hw_sptopic" value="'+esc(f.sptopic||'')+'" placeholder="예: What I want for Christmas"></label>'
+     +'<label class="fld"><span class="label">🎯 목표 단어 10개 — 한 줄에 "단어 - 뜻"</span><textarea id="hw_spwords" data-bind="hw_spwords" rows="8" placeholder="season - 계절&#10;warm - 따뜻한&#10;go camping - 캠핑하러 가다">'+esc(f.spwords||'')+'</textarea></label>'
+     +'<div class="label">수준 (AI 말투)</div><div class="tabs"><button data-act="hwsplevel" data-v="elementary" aria-selected="'+(f.splevel!=='middle')+'">초등</button><button data-act="hwsplevel" data-v="middle" aria-selected="'+(f.splevel==='middle')+'">중등</button></div>'
+     +'<p class="meta">제목을 비우면 "스피킹: 주제"로 올라가요. 학생은 숙제 제출 메뉴에서 스피킹을 하고 결과를 제출해요.</p></div>':'')
    +'<div class="label">폴더</div><div class="tabs">'+HF.map(x=>'<button data-act="hwfolder" data-v="'+x[0]+'" aria-selected="'+(fo===x[0])+'">'+x[2]+' '+x[1]+'</button>').join('')+'</div>'
    +(fo!=='gen'?'<p class="meta">이 폴더를 열어 준 학생에게만 보여요. (학생별 과정 메뉴에서 열고 닫아요)</p>':'')
    +'<label class="fld"><span class="label">제목</span><input type="text" id="hw_title" data-bind="hw_title" value="'+esc(f.title||'')+'" placeholder="예: 1주차 Reading Explorer 워크시트"></label>'
@@ -1168,7 +2670,7 @@ function hwTeacher(){
   const list=sortedHw(HW);
   const rows=list.length?'<h2>올린 숙제</h2><div class="units">'+list.map(h=>{
     const ts=DB.students.filter(s=>forMe(h,s.uid)),done=ts.filter(s=>subOf(h.id,s.uid)).length,wait=SUBS.filter(x=>!x.own&&(x.base||x.hw)===h.id&&!FB[x.id]&&String(x.at).slice(0,10)>=FB_START).length;
-    return '<button class="unit" data-act="hwopen" data-v="'+h.id+'"><div class="row"><b>'+(h.folder?'📖 ':'')+esc(h.title)+'</b><span class="pill '+(done===ts.length&&ts.length?'p-ok':'p-lr')+'">제출 '+done+'/'+ts.length+'</span></div><div class="meta">'+hwWin(h)+' · '+(h.target==='all'?'전체 학생':ts.length+'명')+(wait?' · <b>확인 대기 '+wait+'</b>':'')+'</div></button>'}).join('')+'</div>':'<p class="meta">아직 올린 숙제가 없어요.</p>';
+    return '<button class="unit" data-act="hwopen" data-v="'+h.id+'"><div class="row"><b>'+hwIcon(h)+esc(h.title)+'</b><span class="pill '+(done===ts.length&&ts.length?'p-ok':'p-lr')+'">제출 '+done+'/'+ts.length+'</span></div><div class="meta">'+hwWin(h)+' · '+(h.target==='all'?'전체 학생':ts.length+'명')+(wait?' · <b>확인 대기 '+wait+'</b>':'')+'</div></button>'}).join('')+'</div>':'<p class="meta">아직 올린 숙제가 없어요.</p>';
   return dataWarn()+inbox+ownTeacher()+form+rows;
 }
 function daysText(s){const d=(s.days||[]).slice().sort((a,b)=>((a+6)%7)-((b+6)%7));return d.length?d.map(x=>DAYN[x]).join('·'):''}
@@ -1232,11 +2734,11 @@ function hwTeacherDetail(h){
       if(h.open)tags.push('오픈 후 '+(ago(h.open,r.at)||'0분')+' 만에 제출');
       if(near>=0&&near<3*36e5)tags.push('⚠ 마감 직전 제출');
       if(new Date(r.at)>new Date(h.due))tags.push('지각');
-      return '<div class="hwrow" style="background:var(--soft)"><div class="row"><b>제출 '+(i+1)+'회</b><span class="meta">'+fmtDt(r.at)+' · 사진 '+(r.count||0)+'장'+(fb?' · '+(fb.status==='redo'?'재제출 요청':'확인 완료'+(fb.score!=null&&fb.score!==''?' '+fb.score+'점':'')):' · 확인 대기')+'</span></div>'
+      return '<div class="hwrow" style="background:var(--soft)"><div class="row"><b>제출 '+(i+1)+'회</b><span class="meta">'+fmtDt(r.at)+(r.speak?' · 🎤 스피킹 '+(r.speak.totalTurns||0)+'턴 · 단어 '+(r.speak.wordsUsed||0)+'/'+(r.speak.wordsTotal||0):' · 사진 '+(r.count||0)+'장')+(fb?' · '+(fb.status==='redo'?'재제출 요청':'확인 완료'+(fb.score!=null&&fb.score!==''?' '+fb.score+'점':'')):' · 확인 대기')+'</span></div>'
        +(tags.length?'<p class="meta" style="margin:0">'+tags.join(' · ')+'</p>':'')
        +(r.note?'<p class="meta" style="margin:0">남긴 말: “'+esc(r.note)+'”</p>':'')
-       +'<div class="acts"><button class="btn'+(open?'':' main')+'" data-act="hwview" data-v="'+r.id+'">'+(open?'닫기':(fb?'사진·피드백 보기':'사진 보고 확인하기'))+'</button></div>'
-       +(open?(S.pc[r.id]?(S.pc[r.id].length?thumbs(S.pc[r.id],false,true,true):'<p class="meta">사진이 없어요.</p>'):'<p class="meta">불러오는 중…</p>')
+       +'<div class="acts"><button class="btn'+(open?'':' main')+'" data-act="hwview" data-v="'+r.id+'">'+(open?'닫기':r.speak?(fb?'결과·피드백 보기':'결과 보고 확인하기'):(fb?'사진·피드백 보기':'사진 보고 확인하기'))+'</button></div>'
+       +(open?(r.speak?spkHtml(r.speak,r.id,true):S.pc[r.id]?(S.pc[r.id].length?thumbs(S.pc[r.id],false,true,true):'<p class="meta">사진이 없어요.</p>'):'<p class="meta">불러오는 중…</p>')
          +'<label class="fld"><span class="label">학생에게 보이는 피드백</span><textarea data-bind="fb_t|'+r.id+'" rows="3">'+esc(f.text!==undefined?f.text:(fb&&fb.text)||'')+'</textarea></label>'
          +'<label class="fld"><span class="label">점수 (선택, 100점 만점)</span><input type="number" min="0" max="100" data-bind="fb_s|'+r.id+'" value="'+esc(String(f.score!==undefined?f.score:(fb&&fb.score!=null?fb.score:'')))+'"></label>'
          +'<div class="acts"><button class="btn main" data-act="fbok" data-v="'+r.id+'">확인 완료</button><button class="btn" data-act="fbredo" data-v="'+r.id+'">재제출 요청</button></div>':'')
@@ -1245,9 +2747,10 @@ function hwTeacherDetail(h){
      +(rr||'<div class="row"><span class="meta">아직 제출하지 않았어요</span><button class="btn" data-act="hwcopy1" data-v="'+s.uid+'">독촉 문구 복사</button></div>')+'</div>';
   }).join('');
   const done=ts.filter(s=>subOf(h.id,s.uid)).length;
-  return '<button class="btn link" data-act="hwclose" style="align-self:flex-start">← 숙제 목록</button><h2>'+(h.folder?'📖 ':'')+esc(h.title)+'</h2>'
+  return '<button class="btn link" data-act="hwclose" style="align-self:flex-start">← 숙제 목록</button><h2>'+hwIcon(h)+esc(h.title)+'</h2>'
    +'<div class="row"><span class="pill '+(done===ts.length&&ts.length?'p-ok':'p-lr')+'">제출 '+done+'/'+ts.length+'</span><span class="meta">'+hwWin(h)+'</span></div>'
-   +(h.desc?'<p class="hwdesc" style="white-space:pre-wrap">'+esc(h.desc)+'</p>':'')+msgBox(/^(확인 완료로 저장했어요|재제출을 요청했어요|복사했어요)/)
+   +(h.desc?'<p class="hwdesc" style="white-space:pre-wrap">'+esc(h.desc)+'</p>':'')
+   +(h.kind==='speak'?'<div class="authbox"><b>🎤 스피킹 숙제 · 주제: '+esc(h.topic||'')+'</b><p class="meta" style="margin:0">수준: '+(SPLV[h.level]||'초등')+'</p>'+spkWordsHtml(h.words)+'<div class="acts"><button class="btn" data-act="spkprev" data-v="'+h.id+'">🎤 원장님 미리 해보기</button></div></div>':'')+msgBox(/^(확인 완료로 저장했어요|재제출을 요청했어요|복사했어요)/)
    +(ts.length?'<div class="hwlist">'+rows+'</div>':'<p class="meta">이 숙제를 받는 학생이 없어요.</p>')
    +'<p class="meta">카톡 자동 발송은 아직 없습니다. 독촉 문구를 복사해서 학부모님께 카톡으로 보내 주세요.</p>'
    +'<div class="acts"><button class="btn" data-act="hwdel" data-v="'+h.id+'">'+(S.delArm==='hw:'+h.id?'정말 삭제합니다 (사진도 함께 지워져요)':'숙제 삭제')+'</button></div>';
@@ -1265,7 +2768,9 @@ function reportData(s,month){
   const hws=HW.filter(h=>forMe(h,s.uid)&&String(h.due).slice(0,7)===month);
   let on=0,late=0,miss=0;
   hws.forEach(h=>{const sub=subOf(h.id,s.uid);if(sub){new Date(sub.at)>new Date(h.due)?late++:on++}else if(new Date()>new Date(h.due))miss++});
-  return{tests:tests.length,mc:mc.length,sa:sa.length,rt:rt.length,mcAvg:avg(mc),saAvg:avg(sa),rtAvg:avg(rt),top,hw:hws.length,on,late,miss,
+  const sps=SUBS.filter(x=>x.uid===s.uid&&x.speak&&String(x.at).slice(0,7)===month).map(x=>x.speak);
+  const spk={n:sps.length,turns:sps.reduce((a,x)=>a+(x.totalTurns||0),0),wu:sps.reduce((a,x)=>a+(x.wordsUsed||0),0),wt:sps.reduce((a,x)=>a+(x.wordsTotal||0),0),corr:sps.reduce((a,x)=>a+(x.corrections||[]).length,0)};
+  return{spk,tests:tests.length,mc:mc.length,sa:sa.length,rt:rt.length,mcAvg:avg(mc),saAvg:avg(sa),rtAvg:avg(rt),top,hw:hws.length,on,late,miss,
     units:UNITS.map(u=>({t:u.title,p:unitPct(s.progress[u.id],u)})),points:totalPoints(s)};
 }
 function reportText(s,month,R,comment){
@@ -1278,6 +2783,7 @@ function reportText(s,month,R,comment){
   L.push('- 누적 포인트 '+R.points+'점');
   if(R.top.length)L.push('- 자주 틀린 단어: '+R.top.join(', '));
   L.push('','■ 숙제',R.hw?'- 이번 달 숙제 '+R.hw+'개 중 '+(R.on+R.late)+'개 제출 (정시 '+R.on+', 지각 '+R.late+', 미제출 '+R.miss+')':'- 이번 달 숙제 기록 없음');
+  if(R.spk&&R.spk.n)L.push('','■ 스피킹','- AI 영어 대화 '+R.spk.n+'회 (총 '+R.spk.turns+'턴)','- 목표 단어 사용 '+R.spk.wu+' / '+R.spk.wt+'개','- 고친 문장 '+R.spk.corr+'개');
   L.push('','■ 선생님 한마디',comment||'(아직 작성하지 않았어요)');
   return L.join('\n');
 }
@@ -2058,6 +3564,9 @@ function act(a,d,btn){
   if(a==='pslots'){makePhotoSlots(v);return}
   if(a==='pastepic'){pastePic();return}
   if(a==='hwview'){viewSub(v);return}
+  if(a==='spkgo'){spkOpen(HW.find(x=>x.id===v),false);return}
+  if(a==='spkprev'){spkOpen(HW.find(x=>x.id===v),true);return}
+  if(a==='spkcopy'){const sb=SUBS.find(x=>x.id===v);if(sb&&sb.speak)copyText(spkText(sb.speak,sb.name)).then(ok=>{S.cmsg=ok?'복사했어요. 카톡에 붙여넣으세요.':'복사하지 못했어요.';render()});return}
   if(a==='fbok'){saveFb(v,'ok');return}
   if(a==='fbredo'){saveFb(v,'redo');return}
   if(a==='hwcopy1'){const h=HW.find(x=>x.id===S.hwOpen),s=DB.students.find(x=>x.uid===v);if(h&&s)copyText(nudgeText(h,s)).then(ok=>{S.cmsg=ok?'복사했어요. 카톡에 붙여넣으세요.':'복사하지 못했어요.';render()});return}
@@ -2079,6 +3588,8 @@ function act(a,d,btn){
   else if(a==='hwfsel'){S.hwF=v}
   else if(a==='hwssel'){S.hwS=v}
   else if(a==='hwfolder'){S.f.folder=v}
+  else if(a==='hwkind'){S.f.kind=v}
+  else if(a==='hwsplevel'){S.f.splevel=v}
   else if(a==='hwdue1'){const f=S.f;if(!f.odate){S.cmsg='먼저 오픈 날짜를 정해 주세요.';}else{const o=new Date(f.odate+'T'+(f.otime||'00:00')),n=new Date(o.getTime()+864e5);f.date=n.getFullYear()+'-'+pad2(n.getMonth()+1)+'-'+pad2(n.getDate());f.time=pad2(n.getHours())+':'+pad2(n.getMinutes());S.cmsg=''}}
   else if(a==='ownopen'){S.hwOpen='__own';S.draft={photos:[],note:'',busy:false,msg:''}}
   else if(a==='ownf'){S.ownF=v}
@@ -2154,7 +3665,7 @@ document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;c
 function bind(k,v){
   if(k==='hw_title')S.f.title=v;else if(k==='hw_desc')S.f.desc=v;else if(k==='hw_date')S.f.date=v;else if(k==='hw_time')S.f.time=v;
   else if(k==='sh_title')S.sf.title=v;else if(k==='sh_desc')S.sf.desc=v;else if(k==='sh_date')S.sf.date=v;else if(k==='sh_time')S.sf.time=v;
-  else if(k==='hw_odate')S.f.odate=v;else if(k==='hw_otime')S.f.otime=v;
+  else if(k==='hw_odate')S.f.odate=v;else if(k==='hw_sptopic')S.f.sptopic=v;else if(k==='hw_spwords')S.f.spwords=v;else if(k==='hw_otime')S.f.otime=v;
   else if(k.indexOf('fb_t|')===0){(S.fbf=S.fbf||{});(S.fbf[k.slice(5)]=S.fbf[k.slice(5)]||{}).text=v}else if(k.indexOf('fb_s|')===0){(S.fbf=S.fbf||{});(S.fbf[k.slice(5)]=S.fbf[k.slice(5)]||{}).score=v}
   else if(k==='draft_note')S.draft.note=v;else if(k==='rp_comment'){S.rp.comment=v;S.rp.dirty=true}
 }

@@ -1,4 +1,6 @@
-# speaking.html(단독 스피킹 앱) → 단어 앱 안에 넣을 위젯 스크립트(window.EJSpeak) 생성
+# speaking.html(단독 스피킹 앱) → 단어 앱(index.html) 안에 넣는 스피킹 위젯(window.EJSpeak) 생성
+# 사용법: python3 tools/make_widget.py speaking.html index.html
+#   speaking.html 을 고친 뒤 이 명령을 실행하면 index.html 안의 위젯 부분만 새로 바뀝니다.
 import re, sys, json
 src = open(sys.argv[1], encoding='utf-8').read()
 out_path = sys.argv[2]
@@ -26,10 +28,14 @@ css += '\n.wrap{position:relative}\n.overlay{position:absolute}\n'
 body = rep(body, '<button id="settingsBtn" class="icon-btn" title="설정" aria-label="설정">⚙️</button>',
   '<button id="settingsBtn" class="icon-btn" title="설정" aria-label="설정">⚙️</button>\n      <button id="closeBtn" class="icon-btn" title="나가기" aria-label="나가기">✕</button>')
 # 학생 정보·주제·단어는 숙제에서 정해지므로 설정 화면에서 숨김
-for title in ['<h3>🙋 학생 정보</h3>', '<h3>💬 오늘의 주제</h3>', '<h3>🎯 오늘의 목표 단어 (10개)</h3>']:
+for title in ['<h3>💬 오늘의 주제</h3>', '<h3>🎯 오늘의 목표 단어 (10개)</h3>']:
     k = body.index(title); c = body.rindex('<div class="card">', 0, k)
     body = body[:c] + '<div class="card hidden">' + body[c+len('<div class="card">'):]
 body = rep(body, '💾 저장하고 대화하기', '💾 저장하기')
+# 학생 정보 카드: 영어 이름만 (학년은 숙제에서 정함)
+body = rep(body, '<h3>🙋 학생 정보</h3>', '<h3>🙋 내 영어 이름</h3>')
+body = rep(body, '<label for="sName">학생 이름 (영어 이름도 좋아요)</label>', '<label for="sName">영어 이름 (선택) — 선생님이 이 이름으로 불러 줘요. 비우면 가입한 이름을 써요.</label>')
+body = rep(body, '<div class="field">\n          <label>학년 (AI 난이도)</label>', '<div class="field hidden">\n          <label>학년 (AI 난이도)</label>')
 html = '<div class="wrap">' + body + '</div>'
 
 # ---------- JS ----------
@@ -91,6 +97,7 @@ js = js[:s0] + r'''function openSettings() {
   $('sApiKey').value = getApiKey();
   $('sApiKey').type = 'password'; $('sKeyShow').textContent = '보기';
   $('sKeyResult').textContent = ''; $('sKeyResult').className = 'test-result';
+  $('sName').value = settings.engName || '';
   $('sAutoTTS').checked = settings.autoTTS;
   $('sFbOpen').checked = settings.feedbackAlwaysOpen;
   ROOT.querySelectorAll('input[name=sFbStyle]').forEach(r => { r.checked = r.value === (settings.feedbackStyle || 'teacher'); });
@@ -115,7 +122,10 @@ function saveSettingsFromForm() {
   const key = $('sApiKey').value.trim();
   if (!key && !EJ_DEBUG.mock) { toast('API 키를 입력해 주세요 🔑'); $('sApiKey').focus(); return; }
   setApiKey(key);
+  const engName = $('sName').value.trim();
+  const nameChanged = engName !== (settings.engName || '');
   Object.assign(settings, {
+    engName,
     autoTTS: $('sAutoTTS').checked,
     feedbackAlwaysOpen: $('sFbOpen').checked,
     feedbackStyle: (ROOT.querySelector('input[name=sFbStyle]:checked') || {}).value || 'teacher',
@@ -128,6 +138,11 @@ function saveSettingsFromForm() {
   saveSettings();
   closeSettings();
   hideNotice();
+  if (nameChanged && ASSIGN) {
+    ASSIGN.name = engName || ASSIGN.baseName || '';
+    if (state.session && !userTurns().length) { startNewSession(false); toast('저장했어요 ✅'); return; }
+    if (state.session) state.session.studentName = ASSIGN.name;
+  }
   renderHeader();
   renderAllMessages();
   refreshLock();
@@ -189,6 +204,8 @@ function open(opts) {
   ASSIGN = Object.assign({ words: [], level: 'elementary', name: '' }, opts || {});
   ASSIGN.topic = String(ASSIGN.topic || '').trim() || 'Free talk';
   settings = Object.assign({}, DEFAULT_SETTINGS, loadJSON(LS.settings, {}));
+  ASSIGN.baseName = ASSIGN.name;
+  if (settings.engName) ASSIGN.name = settings.engName;   // 영어 이름이 있으면 그 이름으로 불러 줌
   prevOverflow = document.body.style.overflow;
   document.body.style.overflow = 'hidden';
   HOST.style.display = 'block';
@@ -203,5 +220,14 @@ window.EJSpeak = { open, close: () => mounted && HOST.style.display !== 'none' &
 
 js = js.replace("let settings = Object.assign", "let settings = Object.assign", 1)
 widget = "/* ===== EJ Speaking 위젯 (tools/make_widget.py 로 speaking.html 에서 자동 생성) ===== */\n(function () {\n'use strict';\nconst WIDGET_CSS = " + json.dumps(css, ensure_ascii=False) + ";\nconst WIDGET_HTML = " + json.dumps(html, ensure_ascii=False) + ";\n" + js + "\n})();\n"
-open(out_path, 'w', encoding='utf-8').write(widget)
+assert '</script' not in widget.lower()
+if out_path.endswith('.html'):
+    # index.html 안의 <script id="ej-speak-widget"> ... </script> 부분만 교체
+    page = open(out_path, encoding='utf-8').read()
+    a = '<script id="ej-speak-widget">'
+    i = page.index(a) + len(a); j = page.index('</script>', i)
+    page = page[:i] + '\n' + widget + page[j:]
+    open(out_path, 'w', encoding='utf-8').write(page)
+else:
+    open(out_path, 'w', encoding='utf-8').write(widget)
 print('widget bytes', len(widget.encode()))
