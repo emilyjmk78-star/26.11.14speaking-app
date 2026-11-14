@@ -9,4 +9,4 @@
     # 마이크(음성 인식) 사용 허용
     Permissions-Policy = "microphone=(self)"
     X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "no-referrer"
+    Referrer-Policy = "strict-origin-when-cross-origin"
