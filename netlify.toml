@@ -1,0 +1,12 @@
+# EJ English · Speaking — 정적 사이트 (빌드 없음, index.html 하나)
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # 마이크(음성 인식) 사용 허용
+    Permissions-Policy = "microphone=(self)"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
